@@ -6,10 +6,13 @@
 class CameraStreamer: public VideoStreamer
 {
     public:
-        CameraStreamer(){};
+        CameraStreamer()
+        {
+            ;
+        };
         ~CameraStreamer()
         {
-            ROS_INFO("Destructing CameraStreamer");
+            ;
         }
         bool initialize() override;
         bool getFrame(Mat &frame) override;

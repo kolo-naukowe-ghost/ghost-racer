@@ -21,11 +21,7 @@ int main(int argc, char **argv)
     Mat frame;
     if(cameraStreamReader->getFrame(frame))
     {
-        ROS_INFO("Fetched frame");
-    }
-    else
-    {
-        ROS_INFO("Failed to fetch frame");
+        ;   
     }
 
     delete cameraStreamReader;

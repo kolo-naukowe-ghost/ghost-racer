@@ -3,5 +3,5 @@
 
 VideoStreamer::VideoStreamer()
 {
-    ROS_INFO("Video streamer\n");
+    ;
 }

@@ -14,7 +14,7 @@ class VideoStreamer
         VideoStreamer();
         virtual ~VideoStreamer()
         {
-            ROS_INFO("Destructing VideoStreamer");
+            ;
         }
         virtual bool initialize() = 0;
         virtual bool getFrame(Mat &frame) = 0;
