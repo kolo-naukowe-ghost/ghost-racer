@@ -23,10 +23,7 @@ def main():
 
 	video_streamer = CameraStreamer(target_fps, target_width, target_height)
 
-	loop_rate = video_streamer.capture.get(cv2.CAP_PROP_FPS)
-	rospy.loginfo('loop rate is {}'.format(loop_rate))
 	loop_rate = video_streamer.get_fps()
-	rospy.loginfo('loop rate is {}'.format(loop_rate))
 	rate = rospy.Rate(loop_rate)
 
 	while not rospy.is_shutdown():
