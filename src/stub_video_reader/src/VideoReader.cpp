@@ -26,6 +26,7 @@ void VideoReader::frameFetchedCallback(const sensor_msgs::ImageConstPtr &frame)
     if(framesCount > 0 && framesCount % this->performanceCheckWindowLength == 0)
     {
         ROS_INFO_STREAM("Mean time for sending image " << differencesSum / performanceCheckWindowLength);
+        differencesSum = 0.0;
 
         this->lastFrameTimestamp = newFrameTimestamp;
         this->calculatePerformance();
