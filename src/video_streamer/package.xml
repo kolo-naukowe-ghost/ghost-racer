@@ -8,12 +8,18 @@
   <license>MIT</license>
 
   <build_depend>message_generation</build_depend>
-  <exec_depend>message_runtime</exec_depend>
-  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>image_transport</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>std_msg</build_depend>
-  <build_export_depend>rospy</build_export_depend>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <exec_depend>image_transport</exec_depend>  
+  <exec_depend>message_runtime</exec_depend>
   <exec_depend>std_srvs</exec_depend>
   <exec_depend>rospy</exec_depend>
+
+  <build_export_depend>rospy</build_export_depend>
+  <build_export_depend>image_transport</build_export_depend>
 
 </package>
