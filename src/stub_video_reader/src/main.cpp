@@ -14,11 +14,11 @@ int main(int argc, char **argv)
     auto frameFetchedCallback = imageTransport.subscribe(VideoReader::TopicNameToRead, 1, &VideoReader::frameFetchedCallback, &videoReader);
     ROS_INFO_STREAM("Subscribed to '" << VideoReader::TopicNameToRead << "' topic, waiting for images.");
 
-    ros::Rate loop_rate(60);
+    // ros::Rate loop_rate(1000);
     while(ros::ok())
     {
         ros::spinOnce();
-        loop_rate.sleep();
+        // loop_rate.sleep();
     }
 
     ros::shutdown();
