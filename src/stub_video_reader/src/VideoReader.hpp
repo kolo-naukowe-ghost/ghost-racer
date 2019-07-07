@@ -3,6 +3,8 @@
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
 
+#define CHECK_PERFORMANCE 1
+
 using namespace cv;
 
 class VideoReader
@@ -26,10 +28,15 @@ class VideoReader
         {
             return framesCount;
         }
+        void calculatePerformance();
 
 
     private:
         ros::Time newFrameTimestamp;
         bool newFrameFetched = false;
         unsigned int framesCount = 0;
+
+        // for performance calculations
+        ros::Time firstFrameTimestamp, lastFrameTimestamp;
+        const unsigned int performanceCheckWindowLength = 100;
 };

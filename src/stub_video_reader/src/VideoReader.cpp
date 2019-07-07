@@ -9,9 +9,32 @@ void VideoReader::frameFetchedCallback(const sensor_msgs::ImageConstPtr &frame)
     cv_pointer = cv_bridge::toCvShare(frame, sensor_msgs::image_encodings::BGR8);
     fetchedFrame = cv_pointer->image;
 
-    framesCount++;
     newFrameTimestamp = frame->header.stamp;
+
+#if CHECK_PERFORMANCE
+    if(framesCount == 0)
+    {
+        this->firstFrameTimestamp = newFrameTimestamp;
+    }
+#endif
+
+    framesCount++;
     newFrameFetched = true;
 
+#if CHECK_PERFORMANCE
+    if(framesCount > 0 && framesCount % this->performanceCheckWindowLength == 0)
+    {
+        this->lastFrameTimestamp = newFrameTimestamp;
+        this->calculatePerformance();
+
+        this->firstFrameTimestamp = newFrameTimestamp;
+    }
     // ROS_INFO_STREAM(std::to_string(framesCount));
+#endif
+}
+
+void VideoReader::calculatePerformance()
+{
+    auto fps = performanceCheckWindowLength / (lastFrameTimestamp - firstFrameTimestamp).toSec();
+    ROS_INFO_STREAM("Frame #" << this->framesCount << ", FPS:" << fps);
 }
