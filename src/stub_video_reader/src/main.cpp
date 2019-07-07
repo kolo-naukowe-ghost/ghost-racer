@@ -5,6 +5,24 @@
 
 int main(int argc, char **argv)
 {
+    VideoReader videoReader;
+
+    ros::init(argc, argv, "video_reader");
+    ros::NodeHandle nodeHandleVideoReader;
+    image_transport::ImageTransport imageTransport(nodeHandleVideoReader);
+
+    auto frameFetchedCallback = imageTransport.subscribe(VideoReader::TopicNameToRead, 1, &VideoReader::frameFetchedCallback, &videoReader);
+    ROS_INFO_STREAM("Subscribed to '" << VideoReader::TopicNameToRead << "' topic, waiting for images.");
+
+    ros::Rate loop_rate(60);
+    while(ros::ok())
+    {
+        ros::spinOnce();
+        loop_rate.sleep();
+    }
+
+    ros::shutdown();
+    ros::waitForShutdown();
 
     return 0;
 }
