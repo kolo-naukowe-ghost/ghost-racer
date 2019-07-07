@@ -22,19 +22,23 @@ void VideoReader::frameFetchedCallback(const sensor_msgs::ImageConstPtr &frame)
     newFrameFetched = true;
 
 #if CHECK_PERFORMANCE
+    differencesSum += (ros::Time::now() - newFrameTimestamp).toSec();
     if(framesCount > 0 && framesCount % this->performanceCheckWindowLength == 0)
     {
+        ROS_INFO_STREAM("Mean time for sending image " << differencesSum / performanceCheckWindowLength);
+
         this->lastFrameTimestamp = newFrameTimestamp;
         this->calculatePerformance();
 
         this->firstFrameTimestamp = newFrameTimestamp;
     }
-    // ROS_INFO_STREAM(std::to_string(framesCount));
 #endif
 }
 
+#if CHECK_PERFORMANCE
 void VideoReader::calculatePerformance()
 {
     auto fps = performanceCheckWindowLength / (lastFrameTimestamp - firstFrameTimestamp).toSec();
     ROS_INFO_STREAM("Frame #" << this->framesCount << ", FPS:" << fps);
 }
+#endif

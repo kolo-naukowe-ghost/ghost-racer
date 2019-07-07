@@ -28,7 +28,6 @@ class VideoReader
         {
             return framesCount;
         }
-        void calculatePerformance();
 
 
     private:
@@ -36,7 +35,12 @@ class VideoReader
         bool newFrameFetched = false;
         unsigned int framesCount = 0;
 
+#if CHECK_PERFORMANCE
+        void calculatePerformance();
+
         // for performance calculations
         ros::Time firstFrameTimestamp, lastFrameTimestamp;
         const unsigned int performanceCheckWindowLength = 100;
+        double differencesSum = 0.0f;
+#endif
 };
