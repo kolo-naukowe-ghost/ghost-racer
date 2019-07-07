@@ -33,6 +33,7 @@ def main():
 			ret, frame = video_streamer.get_stream()
 			if ret:
 				message = cv_bridge.cv2_to_imgmsg(frame, encoding='bgr8')
+				message.header.stamp = rospy.get_rostime()
 				publisher.publish(message)
 			else:
 				rospy.logwarn('Failed to capture a frame.')
