@@ -17,7 +17,7 @@ bool CameraStreamer::initialize()
 bool CameraStreamer::getFrame(Mat &frame)
 {
     cameraCapture >> frame;
-  
+
     if (frame.empty())
         return false;
     return true;
