@@ -86,6 +86,7 @@ include_directories(
 add_executable(${PROJECT_NAME}_node
   src/main.cpp
   src/VideoStreamer.cpp
+  src/CameraStreamer.cpp
 )
 
 ## Rename C++ executable without prefix

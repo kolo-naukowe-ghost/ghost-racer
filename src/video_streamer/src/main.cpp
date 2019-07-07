@@ -1,4 +1,5 @@
 #include "VideoStreamer.hpp"
+#include "CameraStreamer.hpp"
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
 
@@ -10,7 +11,22 @@ int main(int argc, char **argv)
     image_transport::ImageTransport imageTransport(nodeHandle);
     image_transport::Publisher imagePublisher = imageTransport.advertise(VideoStreamer::TopicName, 1);
     
-    VideoStreamer cameraStreamReader;
+    VideoStreamer *cameraStreamReader = new CameraStreamer();
     
-    cameraStreamReader.initialize();
+    if(!cameraStreamReader->initialize())
+    {
+        delete cameraStreamReader;
+        return 0;
+    }
+    Mat frame;
+    if(cameraStreamReader->getFrame(frame))
+    {
+        ROS_INFO("Fetched frame");
+    }
+    else
+    {
+        ROS_INFO("Failed to fetch frame");
+    }
+
+    delete cameraStreamReader;
 }
