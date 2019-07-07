@@ -4,12 +4,15 @@
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
 
+#include <string>
+
 int main(int argc, char **argv)
 {
     const int targetFramerate = 25;
     const int targetWidth = 500;
     const int targetHeight = 500;
     Size target_resolution = Size(targetWidth, targetHeight);
+    int publishedFramesCount = 0;
 
     ros::init(argc, argv, "video_streamer");
 
@@ -62,6 +65,9 @@ int main(int argc, char **argv)
 
         auto imgPtr = cv_bridge::CvImage(header, "bgr8", frame).toImageMsg();
         imagePublisher.publish(*imgPtr);
+
+        publishedFramesCount++;
+        // ROS_INFO_STREAM(std::to_string(publishedFramesCount));
 
         ros::spinOnce();
         loop_rate.sleep();
