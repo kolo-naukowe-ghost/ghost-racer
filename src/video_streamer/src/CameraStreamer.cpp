@@ -2,7 +2,7 @@
 
 bool CameraStreamer::initialize()
 {
-    if(!cameraCapture.open(0))
+    if(!capture.open(deviceID))
     {
         ROS_ERROR("Couldn't find camera.");
         return false;
@@ -16,7 +16,7 @@ bool CameraStreamer::initialize()
 
 bool CameraStreamer::getFrame(Mat &frame)
 {
-    cameraCapture >> frame;
+    capture >> frame;
 
     if (frame.empty())
         return false;

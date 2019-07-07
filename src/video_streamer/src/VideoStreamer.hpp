@@ -18,4 +18,10 @@ class VideoStreamer
         }
         virtual bool initialize() = 0;
         virtual bool getFrame(Mat &frame) = 0;
+        bool setFramerate(int fps);
+        bool setStreamSize(int w, int h);
+        double getFPS();
+    protected:
+        unsigned int deviceID = 0;
+        VideoCapture capture;
 };
