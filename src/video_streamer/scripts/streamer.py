@@ -18,37 +18,37 @@ target_height = 500
 
 
 def main():
-	rospy.init_node(node_name, anonymous=True)
+    rospy.init_node(node_name, anonymous=True)
 
-	cv_bridge = CvBridge()
+    cv_bridge = CvBridge()
 
-	publisher = rospy.Publisher(VideoStreamer.topic_name, Image, queue_size=10)
+    publisher = rospy.Publisher(VideoStreamer.topic_name, Image, queue_size=10)
 
-	video_streamer = CsiCameraStreamer(target_fps, target_width, target_height)
-	if not video_streamer.initialize_stream():
+    video_streamer = CsiCameraStreamer(target_fps, target_width, target_height)
+    if not video_streamer.initialize_stream():
             rospy.logerror('Failed to initialize video stream')
 
-	loop_rate = video_streamer.get_fps()
-        rospy.loginfo("Starting stream, width: {}, height: {}, FPS: {}".format(video_streamer.w, video_streamer.h, loop_rate))
-	rate = rospy.Rate(loop_rate)
+    loop_rate = video_streamer.get_fps()
+    rospy.loginfo("Starting stream, width: {}, height: {}, FPS: {}".format(video_streamer.w, video_streamer.h, loop_rate))
+    rate = rospy.Rate(loop_rate)
 
-	while not rospy.is_shutdown():
-		try:
-			ret, frame = video_streamer.get_stream()
-			if ret:
-				message = cv_bridge.cv2_to_imgmsg(frame, encoding='bgr8')
-				message.header.stamp = rospy.get_rostime()
-				publisher.publish(message)
-			else:
-				rospy.logwarn('Failed to capture a frame.')
+    while not rospy.is_shutdown():
+        try:
+            ret, frame = video_streamer.get_stream()
+            if ret:
+                message = cv_bridge.cv2_to_imgmsg(frame, encoding='bgr8')
+                message.header.stamp = rospy.get_rostime()
+                publisher.publish(message)
+            else:
+                rospy.logwarn('Failed to capture a frame.')
 
-			rate.sleep()
-		except rospy.ROSInterruptException:
-			print("Exception occured")
+            rate.sleep()
+        except rospy.ROSInterruptException:
+            print("Exception occured")
 
-	video_streamer.capture.release()
+    video_streamer.capture.release()
 
 
 if __name__=='__main__':
-	main()
+    main()
 
