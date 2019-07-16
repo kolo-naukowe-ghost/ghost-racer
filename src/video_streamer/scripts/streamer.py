@@ -6,12 +6,13 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 from camera_streamer import CameraStreamer
 from video_streamer import VideoStreamer
+from csi_camera_streamer import CsiCameraStreamer
 
 node_name = 'video_streamer'
 loop_rate = 30
 source_device = '/dev/video0'
 
-target_fps = 30
+target_fps = 60
 target_width = 500
 target_height = 500
 
@@ -23,7 +24,9 @@ def main():
 
 	publisher = rospy.Publisher(VideoStreamer.topic_name, Image, queue_size=10)
 
-	video_streamer = CameraStreamer(target_fps, target_width, target_height)
+	video_streamer = CsiCameraStreamer(target_fps, target_width, target_height)
+	if not video_streamer.initialize_stream():
+            rospy.logerror('Failed to initialize video stream')
 
 	loop_rate = video_streamer.get_fps()
 	rate = rospy.Rate(loop_rate)

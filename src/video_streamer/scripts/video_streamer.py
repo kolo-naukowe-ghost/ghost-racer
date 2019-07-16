@@ -1,4 +1,5 @@
 import cv2
+import rospy
 
 class VideoStreamer(object):
     device = '/dev/video0'
@@ -8,9 +9,8 @@ class VideoStreamer(object):
         self.fps = fps
         self.w = width
         self.h = height
-        self.capture = cap = cv2.VideoCapture(VideoStreamer.device)
         self.initialized = False
-        self.initialize_stream()
+        self.capture = None
 
     def get_stream(self):
         pass
@@ -23,9 +23,15 @@ class VideoStreamer(object):
         return self.capture.get(cv2.CAP_PROP_FPS)
 
     def initialize_stream(self):
+        self.capture = cv2.VideoCapture(VideoStreamer.device)
         if not self.capture.isOpened():
             self.initialized = False
         else:
             self.initialized = True
 
         return self.initialized
+
+    def __del__(self):
+        if self.capture is not None:
+            rospy.loginfo('Releasing capture')
+            self.capture.release()
