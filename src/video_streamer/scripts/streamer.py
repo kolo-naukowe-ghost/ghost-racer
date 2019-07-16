@@ -29,6 +29,7 @@ def main():
             rospy.logerror('Failed to initialize video stream')
 
 	loop_rate = video_streamer.get_fps()
+        rospy.loginfo("Starting stream, width: {}, height: {}, FPS: {}".format(video_streamer.w, video_streamer.h, loop_rate))
 	rate = rospy.Rate(loop_rate)
 
 	while not rospy.is_shutdown():
