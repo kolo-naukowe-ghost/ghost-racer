@@ -26,3 +26,10 @@ pip install defusedxml
 source devel/setup.bash
 roslaunch autonomous_driving_world spawn_major_in_competition_track_D1_D2_B1_P1.launch
 ```
+
+In case of error during `catkin_make`:
+![](images/error1_cmake.png)
+
+Copy content from file mentioned in error to your src/CMakeList.txt
+
+Good luck! ;)
