@@ -32,4 +32,7 @@ In case of error during `catkin_make`:
 
 Copy content from file mentioned in error to your src/CMakeList.txt
 
+I also had a problem with permissions:
+`chmod +x src/image_transport_plugins/compressed_depth_image_transport/cfg/CompressedDepthPublisher.cfg src/image_transport_plugins/compressed_image_transport/cfg/* src/image_transport_plugins/theora_image_transport/cfg/*`
+
 Good luck! ;)
