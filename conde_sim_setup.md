@@ -4,7 +4,6 @@
 ```
 git clone https://github.com/kolo-naukowe-ghost/ghost-racer.git
 cd ghost-racer
-git checkout conde_sim_setup
 ```
 2. Theoretically you should be able to run `catkin_make` now, but in practice you may find yourself lacking some of the libraries and packages. First, install ackermann-msgs:
 ```
