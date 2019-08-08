@@ -26,7 +26,7 @@ def main():
 
     video_streamer = CsiCameraStreamer(target_fps, target_width, target_height)
     if not video_streamer.initialize_stream():
-            rospy.logerror('Failed to initialize video stream')
+            rospy.logerr('Failed to initialize video stream')
 
     loop_rate = video_streamer.get_fps()
     rospy.loginfo("Starting stream, width: {}, height: {}, FPS: {}".format(video_streamer.w, video_streamer.h, loop_rate))
