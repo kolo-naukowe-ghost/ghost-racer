@@ -35,6 +35,8 @@ class GazeboEnv(Env, GazeboMixin):
 
         self._unpause_gazebo()
         self._publish_gazebo(message)
+
+        # TODO add some sleep here or something
         self._pause_gazebo()
 
         observation = self._get_observation()
@@ -42,7 +44,7 @@ class GazeboEnv(Env, GazeboMixin):
 
         done = False  # TODO?
 
-        observation, reward, done, info
+        return observation, reward, done, info
 
     def reset(self):
         self._reset_gazebo()
@@ -84,28 +86,28 @@ class GazeboEnv(Env, GazeboMixin):
         :return: Twist
         """
         twist = Twist()
-        twist.linear = 0
-        twist.angular = 0
+        twist.linear.x = 0
+        twist.angular.z = 0
         if action == 0:  # F
-            twist.linear = self.LINEAR_ACTION
+            twist.linear.x = self.LINEAR_ACTION
         elif action == 1:  # L
-            twist.angular = -self.TWIST_ACTION
+            twist.angular.z = -self.TWIST_ACTION
         elif action == 2:  # B
-            twist.linear = -self.LINEAR_ACTION
+            twist.linear.x = -self.LINEAR_ACTION
         elif action == 3:  # R
-            twist.angular = self.TWIST_ACTION
+            twist.angular.z = self.TWIST_ACTION
         elif action == 4:  # FL
-            twist.linear = self.LINEAR_ACTION
-            twist.angular = -self.TWIST_ACTION
+            twist.linear.x = self.LINEAR_ACTION
+            twist.angular.z = -self.TWIST_ACTION
         elif action == 5:  # FR
-            twist.linear = self.LINEAR_ACTION
-            twist.angular = self.TWIST_ACTION
+            twist.linear.x = self.LINEAR_ACTION
+            twist.angular.z = self.TWIST_ACTION
         elif action == 6:  # BL
-            twist.linear = -self.LINEAR_ACTION
-            twist.angular = -self.TWIST_ACTION
+            twist.linear.x = -self.LINEAR_ACTION
+            twist.angular.z = -self.TWIST_ACTION
         elif action == 7:  # BR
-            twist.linear = -self.LINEAR_ACTION
-            twist.angular = self.TWIST_ACTION
+            twist.linear.x = -self.LINEAR_ACTION
+            twist.angular.z = self.TWIST_ACTION
         else:
             raise ValueError
 
