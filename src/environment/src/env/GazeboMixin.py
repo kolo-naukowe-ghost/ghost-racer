@@ -1,5 +1,6 @@
 import rospy
 from cv_bridge import CvBridge
+from gazebo_msgs.srv import GetModelState
 from geometry_msgs.msg import Twist
 from rospy import ROSException
 from sensor_msgs.msg import Image
@@ -11,7 +12,7 @@ class GazeboMixin(object):
         rospy.init_node('env')
 
         self.reset_proxy = rospy.ServiceProxy('/gazebo/reset_simulation', Empty)
-        self.model_states = rospy.ServiceProxy('/gazebo/model_states', Empty)
+        self.model_states = rospy.ServiceProxy('/gazebo/model_states', GetModelState)
         self.unpause_service = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
         self.pause_service = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
         self.cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
@@ -37,14 +38,20 @@ class GazeboMixin(object):
         except rospy.ServiceException:
             print("/gazebo/reset_simulation service call failed")
 
-    def _publish_gazebo(self, message: Twist):
+    def _publish_gazebo(self, message):
+        """
+
+        :param message: Twist
+        :return: None
+        """
         self.cmd_vel.publish(message)
 
     def _get_model_states(self):
-        rospy.wait_for_message('/gazebo/model_states')
+        rospy.wait_for_service('/gazebo/model_states')
         position = None
         try:
-            position = self.model_states('conde', Empty)
+            gms = rospy.ServiceProxy('/gazebo/model_states')
+            position = gms('conde', 'chassis')
         except rospy.ServiceException:
             print("/gazebo/reset_simulation service call failed")
         return position

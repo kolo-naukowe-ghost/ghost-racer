@@ -23,10 +23,15 @@ class GazeboEnv(Env, GazeboMixin):
         self.action_space = spaces.Discrete(9)
         self.observation = np.random.randint(0, 10, (5, 5))
 
-    def step(self, action: int):
+    def step(self, action):
+        """
+
+        :param action: int
+        :return: a lot of things
+        """
         info = dict()
 
-        message: Twist = self._get_message_from_action()
+        message = self._get_message_from_action(action)
 
         self._unpause_gazebo()
         self._publish_gazebo(message)
@@ -55,7 +60,11 @@ class GazeboEnv(Env, GazeboMixin):
         else:
             super(GazeboEnv, self).render(mode=mode)  # just raise an exception
 
-    def _get_observation(self) -> State:
+    def _get_observation(self):
+        """
+
+        :return: State
+        """
         left_image = self._get_image_data_from_topic(self.LEFT_CAMERA_TOPIC)
         center_image = self._get_image_data_from_topic(self.CENTER_CAMERA_TOPIC)
         right_image = self._get_image_data_from_topic(self.RIGHT_CAMERA_TOPIC)
@@ -68,7 +77,12 @@ class GazeboEnv(Env, GazeboMixin):
 
         return 0
 
-    def _get_message_from_action(self, action: int) -> Twist:
+    def _get_message_from_action(self, action):
+        """
+
+        :param action: int
+        :return: Twist
+        """
         twist = Twist()
         twist.linear = 0
         twist.angular = 0
@@ -99,7 +113,7 @@ class GazeboEnv(Env, GazeboMixin):
 
     def _get_car_position(self):
         postion = self._get_model_states()
-
+        print(postion)
         # TODO load, scale image - based on param downlaoded from gazebo and calculate threshold
         if postion is not None:
             return postion.x, postion.y
