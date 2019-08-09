@@ -28,9 +28,9 @@ class GazeboEnv(Env, GazeboMixin):
 
         message: Twist = self._get_message_from_action()
 
-        self.unpause_gazebo()
-        self.publish_gazebo(message)
-        self.pause_gazebo()
+        self._unpause_gazebo()
+        self._publish_gazebo(message)
+        self._pause_gazebo()
 
         observation = self._get_observation()
         reward = self._calculate_reward()
@@ -40,11 +40,11 @@ class GazeboEnv(Env, GazeboMixin):
         observation, reward, done, info
 
     def reset(self):
-        self.reset_gazebo()
-        self.unpause_gazebo()
+        self._reset_gazebo()
+        self._unpause_gazebo()
         self._get_observation()
         # TODO set state, and reward here
-        self.pause_gazebo()
+        self._pause_gazebo()
 
     def render(self, mode='human'):
         if mode == 'rgb_array':
@@ -56,9 +56,9 @@ class GazeboEnv(Env, GazeboMixin):
             super(GazeboEnv, self).render(mode=mode)  # just raise an exception
 
     def _get_observation(self) -> State:
-        left_image = self.get_image_data_from_topic(self.LEFT_CAMERA_TOPIC)
-        center_image = self.get_image_data_from_topic(self.CENTER_CAMERA_TOPIC)
-        right_image = self.get_image_data_from_topic(self.RIGHT_CAMERA_TOPIC)
+        left_image = self._get_image_data_from_topic(self.LEFT_CAMERA_TOPIC)
+        center_image = self._get_image_data_from_topic(self.CENTER_CAMERA_TOPIC)
+        right_image = self._get_image_data_from_topic(self.RIGHT_CAMERA_TOPIC)
 
         state = State(left_image, center_image, right_image)
         return state
@@ -98,7 +98,7 @@ class GazeboEnv(Env, GazeboMixin):
         return twist
 
     def _get_car_position(self):
-        postion = self.get_model_states()
+        postion = self._get_model_states()
 
         # TODO load, scale image - based on param downlaoded from gazebo and calculate threshold
         if postion is not None:
