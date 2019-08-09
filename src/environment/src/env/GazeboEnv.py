@@ -112,9 +112,6 @@ class GazeboEnv(Env, GazeboMixin):
         return twist
 
     def _get_car_position(self):
-        postion = self._get_model_states()
-        print(postion)
-        # TODO load, scale image - based on param downlaoded from gazebo and calculate threshold
-        if postion is not None:
-            return postion.x, postion.y
-        return None
+        model_state = self._get_model_states()
+        position = model_state.pose.position
+        return position.x, position.y

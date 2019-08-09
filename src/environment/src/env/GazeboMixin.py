@@ -12,7 +12,7 @@ class GazeboMixin(object):
         rospy.init_node('env')
 
         self.reset_proxy = rospy.ServiceProxy('/gazebo/reset_simulation', Empty)
-        self.model_states = rospy.ServiceProxy('/gazebo/model_states', GetModelState)
+        self.model_state = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
         self.unpause_service = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
         self.pause_service = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
         self.cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
@@ -47,14 +47,14 @@ class GazeboMixin(object):
         self.cmd_vel.publish(message)
 
     def _get_model_states(self):
-        rospy.wait_for_service('/gazebo/model_states')
-        position = None
-        try:
-            gms = rospy.ServiceProxy('/gazebo/model_states')
-            position = gms('conde', 'chassis')
-        except rospy.ServiceException:
-            print("/gazebo/reset_simulation service call failed")
-        return position
+        """
+        for more information type: rosservice call /gazebo/get_model_state
+        empty string in model_state is very important because
+        it means thath you want to state of whole model, not specific link
+        :return:
+        """
+        model_state = self.model_state('conde', '')
+        return model_state
 
     @staticmethod
     def _get_image_data_from_topic(topic):
