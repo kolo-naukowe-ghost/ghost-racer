@@ -24,7 +24,7 @@ pip install defusedxml
 7. To run the simulator, execute:
 ```
 source devel/setup.bash
-roslaunch autonomous_driving_world spawn_major_in_competition_track_D1_D2_B1_P1.launch
+roslaunch autonomous_driving_world spawn_conde_in_competition_track_D1_D2_B1_P1.launch
 ```
 
 In case of error during `catkin_make`:

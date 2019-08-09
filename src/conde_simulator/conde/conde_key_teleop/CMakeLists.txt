@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
 )
 
+
 # include files in qt-creator project tree
 file(GLOB_RECURSE EXTRA_FILES */*)
 add_custom_target(${PROJECT_NAME}_OTHER_FILES ALL WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} SOURCES ${EXTRA_FILES})
