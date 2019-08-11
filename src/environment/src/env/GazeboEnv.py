@@ -10,24 +10,27 @@ from env.State import State
 
 
 class GazeboEnv(Env, GazeboMixin):
+    # TODO It should not be hardcoded
+    BOARD_WIDTH = 6.95
+    BOARD_HEIGHT = 16.7
+
     LEFT_CAMERA_TOPIC = '/conde_camera_tracking_left/image_raw'
     CENTER_CAMERA_TOPIC = '/conde_camera_signalling_panel/image_raw'
     RIGHT_CAMERA_TOPIC = '/conde_camera_tracking_right/image_raw'
 
     LINEAR_ACTION = 0.3
-    TWIST_ACTION = 0.2
+    TWIST_ACTION = 0.25
 
     def __init__(self):
         super(GazeboEnv, self).__init__()
         metadata = {'render.modes': ['human', 'rgb_array']}
         self.action_space = spaces.Discrete(9)
-        self.observation = np.random.randint(0, 10, (5, 5))
 
     def step(self, action):
         """
 
         :param action: int
-        :return: a lot of things
+        :return: observation: State, reward: float, done: bool, info: dict
         """
         info = dict()
 
@@ -76,7 +79,8 @@ class GazeboEnv(Env, GazeboMixin):
 
     def _calculate_reward(self):
         car_x, car_y = self._get_car_position()
-
+        # TODO read, scale board image, calculate relative position on board image,
+        #  find distance from car to nearest center of road
         return 0
 
     def _get_message_from_action(self, action):
