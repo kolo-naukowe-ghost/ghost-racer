@@ -50,9 +50,10 @@ class GazeboMixin(object):
         """
         for more information type: rosservice call /gazebo/get_model_state
         empty string in model_state is very important because
-        it means that you want to state of whole model, not only specific link
-        :return:
+        it means that you want to get state of whole model, not only specific link
+        :return: model_state: State
         """
+        # TODO try except?
         model_state = self.model_state('conde', '')
         return model_state
 

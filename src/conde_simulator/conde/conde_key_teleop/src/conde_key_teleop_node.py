@@ -176,7 +176,8 @@ class KeyTeleop():
     def _publish(self):
         self._interface.clear()
         self._interface.write_line(2, 'Linear: %d, Angular: %d' % (self._linear, self._angular))
-        self._interface.write_line(5, 'Use arroeys to move, space to stop, q to exit.')
+        self._interface.write_line(5, 'Use arrow keys to move, space to stop, q to exit, s to start saving images, '
+                                      'p to pause.')
         self._interface.refresh()
 
         twist = self._get_twist(self._linear, self._angular)
@@ -274,7 +275,7 @@ class SimpleKeyTeleop():
                 self._angles.append(deepcopy(result))
 
         self._interface.write_line(2, 'Linear: %f, Angular: %f' % (self._linear, self._angular))
-        self._interface.write_line(5, 'AAAAUse arrow keys to move, q to exit.')
+        self._interface.write_line(5, 'Use arrow keys to move, q to exit.')
         self._interface.refresh()
 
         twist = self._get_twist(self._linear, self._angular)
