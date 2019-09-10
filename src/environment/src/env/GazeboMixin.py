@@ -16,6 +16,8 @@ class GazeboMixin(object):
         self.unpause_service = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
         self.pause_service = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
         self.cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
+        # TODO change it to 50 when you finish testing
+        self.sleep_timer = rospy.Rate(1)
 
     def _unpause_gazebo(self):
         rospy.wait_for_service('/gazebo/unpause_physics')
@@ -56,6 +58,9 @@ class GazeboMixin(object):
         # TODO try except?
         model_state = self.model_state('conde', '')
         return model_state
+
+    def _ros_sleep(self):
+        self.sleep_timer.sleep()  # sleep for 1/rate sec
 
     @staticmethod
     def _get_image_data_from_topic(topic):

@@ -3,6 +3,6 @@
 from env.GazeboEnv import GazeboEnv
 
 env = GazeboEnv()
-for _ in range(10000):
+for _ in range(1):
     observation, reward, done, info = env.step(6)
 print(observation)
