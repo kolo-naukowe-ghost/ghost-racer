@@ -8,12 +8,18 @@
 #   * Siegfried-A. Gevatter
 # ROS wiki: http://wiki.ros.org/key_teleop
 # GitHub repo: https://github.com/ros-teleop/teleop_tools
-
+import calendar
 import curses
 import math
+import time
+from copy import deepcopy
 
+import cv2
 import rospy
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge
 from geometry_msgs.msg import Twist
+
 
 class Velocity(object):
 
@@ -40,8 +46,8 @@ class Velocity(object):
         max_value = self._min + self._step_incr * (step - 1)
         return value * max_value
 
-class TextWindow():
 
+class TextWindow():
     _screen = None
     _window = None
     _num_lines = None
@@ -62,13 +68,13 @@ class TextWindow():
 
     def write_line(self, lineno, message):
         if lineno < 0 or lineno >= self._num_lines:
-            raise ValueError, 'lineno out of bounds'
+            raise ValueError('lineno out of bounds')
         height, width = self._screen.getmaxyx()
         y = (height / self._num_lines) * lineno
         x = 10
         for text in message.split('\n'):
             text = text.ljust(width)
-            self._screen.addstr(y, x, text)
+            self._screen.addstr(int(y), int(x), text)
             y += 1
 
     def refresh(self):
@@ -77,8 +83,8 @@ class TextWindow():
     def beep(self):
         curses.flash()
 
-class KeyTeleop():
 
+class KeyTeleop():
     _interface = None
 
     _linear = None
@@ -129,10 +135,10 @@ class KeyTeleop():
 
     def _key_pressed(self, keycode):
         movement_bindings = {
-            curses.KEY_UP:    ( 1,  0),
-            curses.KEY_DOWN:  (-1,  0),
-            curses.KEY_LEFT:  ( 0,  1),
-            curses.KEY_RIGHT: ( 0, -1),
+            curses.KEY_UP: (1, 0),
+            curses.KEY_DOWN: (-1, 0),
+            curses.KEY_LEFT: (0, 1),
+            curses.KEY_RIGHT: (0, -1),
         }
         speed_bindings = {
             ord(' '): (0, 0),
@@ -170,7 +176,8 @@ class KeyTeleop():
     def _publish(self):
         self._interface.clear()
         self._interface.write_line(2, 'Linear: %d, Angular: %d' % (self._linear, self._angular))
-        self._interface.write_line(5, 'Use arrow keys to move, space to stop, q to exit.')
+        self._interface.write_line(5, 'Use arrow keys to move, space to stop, q to exit, s to start saving images, '
+                                      'p to pause.')
         self._interface.refresh()
 
         twist = self._get_twist(self._linear, self._angular)
@@ -190,12 +197,18 @@ class SimpleKeyTeleop():
         self._last_pressed = {}
         self._angular = 0
         self._linear = 0
+        self._skip_frames = 0
+        self._images = list()
+        self._angles = list()
+        self._record = False
+
+        self._current_camera_image = None
 
     movement_bindings = {
-        curses.KEY_UP:    ( 1,  0),
-        curses.KEY_DOWN:  (-1,  0),
-        curses.KEY_LEFT:  ( 0,  1),
-        curses.KEY_RIGHT: ( 0, -1),
+        curses.KEY_UP: (1, 0),
+        curses.KEY_DOWN: (-1, 0),
+        curses.KEY_LEFT: (0, 1),
+        curses.KEY_RIGHT: (0, -1),
     }
 
     def run(self):
@@ -241,11 +254,26 @@ class SimpleKeyTeleop():
         if keycode == ord('q'):
             self._running = False
             rospy.signal_shutdown('Bye')
+        elif keycode == ord('s'):
+            self._record = True
+        elif keycode == ord('p'):
+            if self._record:
+                self._save_output()
+            self._record = False
         elif keycode in self.movement_bindings:
             self._last_pressed[keycode] = rospy.get_time()
 
     def _publish(self):
-        self._interface.clear()
+        self._skip_frames = (self._skip_frames + 1) % 10
+
+        if self._record and self._skip_frames == 0:
+            images = self._get_camera_image()
+            result = [self._linear, self._angular]
+
+            if images is not None:
+                self._images.append(images)
+                self._angles.append(deepcopy(result))
+
         self._interface.write_line(2, 'Linear: %f, Angular: %f' % (self._linear, self._angular))
         self._interface.write_line(5, 'Use arrow keys to move, q to exit.')
         self._interface.refresh()
@@ -253,11 +281,49 @@ class SimpleKeyTeleop():
         twist = self._get_twist(self._linear, self._angular)
         self._pub_cmd.publish(twist)
 
+    def _get_camera_image(self):
+        left, center, right = None, None, None
+        left_r, center_r, right_r = None, None, None
+        while left_r is None or center_r is None or right_r is None:
+            try:
+                left = rospy.wait_for_message('/conde_camera_tracking_left/image_raw', Image, timeout=5)
+                left_r = CvBridge().imgmsg_to_cv2(left, "bgr8")
+                center = rospy.wait_for_message('/conde_camera_signalling_panel/image_raw', Image, timeout=5)
+                center_r = CvBridge().imgmsg_to_cv2(center, "bgr8")
+                right = rospy.wait_for_message('/conde_camera_tracking_right/image_raw', Image, timeout=5)
+                right_r = CvBridge().imgmsg_to_cv2(right, "bgr8")
+            except rospy.ROSException:
+                return [None, None, None]
+        return [left_r, center_r, right_r]
+
+    def _save_output(self):
+        def ts():
+            return int(str(time.time()).replace('.', ''))
+
+        for index, images in enumerate(self._images):
+            for position, image in zip(['L', 'C', 'R'], images):
+                image_path = 'output/image_{}_{}_{}.jpg'.format(index, position, ts())
+                self._angles[index].append(image_path)
+                cv2.imwrite(image_path, image)
+
+        import csv
+
+        with open('output/results_{}.csv'.format(ts()), 'wb') as csvfile:
+            filewriter = csv.writer(csvfile, delimiter=',',
+                                    quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            filewriter.writerow(['linear', 'angular', 'left', 'center', 'right'])
+            for row in self._angles:
+                filewriter.writerow(row)
+
+        self._images = list()
+        self.angles = list()
+
 
 def main(stdscr):
     rospy.init_node('conde_key_teleop')
     app = SimpleKeyTeleop(TextWindow(stdscr))
     app.run()
+
 
 if __name__ == '__main__':
     try:
