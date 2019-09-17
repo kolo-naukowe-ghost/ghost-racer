@@ -31,3 +31,10 @@ rosrun stub_video_reader stub_video_reader_node
 Now, you should be able to see some performance checks in the `video_reader` console being typed every 100 frames. The connection between `video_streamer` node and `video_reader` node is present.
 
 In order to create new package (node) follow the instruction from [the official ROS tutorial](http://wiki.ros.org/ROS/Tutorials/CreatingPackage).
+
+# Running
+
+The easiest way to run the ghost-racer is to pull a docker image from a docker-hub and run script that will automatically run docker with all required docker's parameters:
+
+    docker pull jakubtomczak/ghost-racer
+    sudo ./docker_run.bash
