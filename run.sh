@@ -22,8 +22,10 @@ run () {
 
 
 if [ -f $root_filename ]; then
-    build
-    run
+if [[ "$@" == *"--clean"* ]]; then
+        clean
+    fi
+    build && run
 else
     echo "You can only run ghost-car from the directory containing file $root_filename"
 fi
