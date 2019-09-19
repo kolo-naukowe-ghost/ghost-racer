@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ghost_racer_root_dir=$1
-docker_ghost_racer_root_dir=/home/ghost/ghost-racer
+docker_ghost_racer_root_dir=/home/ghost/
 
 if [ -z $1 ]; then
     ghost_racer_root_dir=$(pwd)
