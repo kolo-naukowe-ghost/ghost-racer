@@ -30,6 +30,7 @@ class GazeboEnv(Env, GazeboMixin):
         metadata = {'render.modes': ['human', 'rgb_array']}
         self.action_space = spaces.Discrete(9)
         self.board = self._load_board()
+        self.white_indices = np.argwhere(self.board == 255)
 
     def step(self, action):
         """
@@ -86,9 +87,30 @@ class GazeboEnv(Env, GazeboMixin):
         relative_car_x = int((self.BOARD_HEIGHT / 2 - car_y) * 100)
         relative_car_y = int((car_x + self.BOARD_WIDTH / 2) * 100)
 
-        self._print_car_position_on_board(relative_car_x, relative_car_y)
-        # TODO find distance from car to nearest center of road
-        return 0
+        point, distance = self._get_closest_point_on_board(relative_car_x, relative_car_y)
+
+        self._print_car_position_on_board(relative_car_x, relative_car_y, point)
+
+        # TODO more sophisticated reward function (?)
+        reward = 1 / (distance + 0.001)
+
+        return reward
+
+    def _get_closest_point_on_board(self, relative_car_x, relative_car_y):
+        """
+
+        :param relative_car_x: int, relative_car_y: int
+        :return: closest_point_index: np.array, distance: float
+        """
+
+        car_position = np.array([relative_car_x, relative_car_y])
+        tmp = self.white_indices - car_position
+        distances2 = np.empty(tmp.shape[0])
+        for row in range(tmp.shape[0]):
+            distances2[row] = tmp[row].dot(tmp[row])
+        closest_point_index = np.argmin(distances2)
+        
+        return self.white_indices[closest_point_index], distances2[closest_point_index]**.5
 
     def _get_message_from_action(self, action):
         """
@@ -143,8 +165,13 @@ class GazeboEnv(Env, GazeboMixin):
         image_array = np.array(board_image) * 255
         return image_array
 
-    def _print_car_position_on_board(self, car_x, car_y):
+    def _print_car_position_on_board(self, car_x, car_y, closest_point):
+        pnt_r, pnt_c = closest_point
         distance = 15
-        img = self.board
+        img = self.board.copy()
         img[car_x - distance:car_x + distance, car_y - distance:car_y + distance] = 255
-        toimage(img).show()
+        img[pnt_r - distance:pnt_r + distance, pnt_c - distance:pnt_c + distance] = 255
+        img = toimage(img)
+        # img.show() # I (Maciej F.) was not able to make it work on my machine (in docker). Image is saved instead.
+        img.save("/home/ghost/ghost-racer/src/environment/src/env/data/car_and_closest_point.jpeg")
+

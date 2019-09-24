@@ -47,9 +47,15 @@ qtcreator-*
 # Emacs
 .#*
 
+# vscode stuff
+.vscode/*
+
 # Catkin custom files
 CATKIN_IGNORE
 
 .idea
 
 src/CMakeLists.txt
+
+# other stuff
+src/environment/src/env/data/car_and_closest_point.jpeg
