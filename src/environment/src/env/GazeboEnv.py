@@ -88,7 +88,6 @@ class GazeboEnv(Env, GazeboMixin):
         relative_car_y = int((car_x + self.BOARD_WIDTH / 2) * 100)
 
         point, distance = self._get_closest_point_on_board(relative_car_x, relative_car_y)
-
         self._print_car_position_on_board(relative_car_x, relative_car_y, point)
 
         # TODO more sophisticated reward function (?)
@@ -105,7 +104,7 @@ class GazeboEnv(Env, GazeboMixin):
 
         car_position = np.array([relative_car_x, relative_car_y])
 
-        # vector of differences of pixel's positions and car's position ex: [[x_pixel1 - x_car, y_pixel1 - y_car], ...]
+        # vector of differences of pixels' positions and car's position ex: [[x_pixel1 - x_car, y_pixel1 - y_car], ...]
         # dot product of each of these vector with itself gives us squared distance between a pixel and a car
         differences = self.white_indices - np.array([relative_car_x, relative_car_y])
         distances_squared = np.sum(differences * differences, axis=1) #dot product of each row with itself
@@ -174,6 +173,6 @@ class GazeboEnv(Env, GazeboMixin):
         img[car_x - distance:car_x + distance, car_y - distance:car_y + distance] = 255
         img[pnt_r - distance:pnt_r + distance, pnt_c - distance:pnt_c + distance] = 255
         img = toimage(img)
-        # img.show() # I (Maciej F.) was not able to make it work on my machine (in docker). Image is saved instead.
+        # img.show() # I was not able to make it work on my machine (in docker). Image is saved instead.
         img.save("/home/ghost/ghost-racer/src/environment/src/env/data/car_and_closest_point.jpeg")
 
