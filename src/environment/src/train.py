@@ -22,7 +22,7 @@ INPUT_SHAPE = (240, 320)
 WINDOW_LENGTH = 1
 
 
-def train():
+def train(test=False):
     np.random.seed(123)
     env = GazeboEnv()
     env.seed(123)
@@ -91,15 +91,20 @@ def train():
 
     # Okay, now it's time to learn something! We capture the interrupt exception so that training
     # can be prematurely aborted. Notice that now you can use the built-in Keras callbacks!
-    weights_filename = 'dqn_{}_weights.h5f'.format('GhostRacer')
-    checkpoint_weights_filename = 'dqn_' + 'GhostRacer' + '_weights_{step}.h5f'
-    log_filename = 'dqn_{}_log.json'.format('GhostRacer')
-    callbacks = [ModelIntervalCheckpoint(checkpoint_weights_filename, interval=100)]
-    callbacks += [FileLogger(log_filename, interval=100)]
-    dqn.fit(env, callbacks=callbacks, nb_steps=1000, log_interval=100)
+    if test == False:
+        weights_filename = 'dqn_{}_weights.h5f'.format('GhostRacer')
+        checkpoint_weights_filename = 'dqn_' + 'GhostRacer' + '_weights_{step}.h5f'
+        log_filename = 'dqn_{}_log.json'.format('GhostRacer')
+        callbacks = [ModelIntervalCheckpoint(checkpoint_weights_filename, interval=100)]
+        callbacks += [FileLogger(log_filename, interval=100)]
+        dqn.fit(env, callbacks=callbacks, nb_steps=1000, log_interval=100)
 
-    # After training is done, we save the final weights one more time.
-    dqn.save_weights(weights_filename, overwrite=True)
+        # After training is done, we save the final weights one more time.
+        dqn.save_weights(weights_filename, overwrite=True)
 
-    # Finally, evaluate our algorithm for 10 episodes.
-    dqn.test(env, nb_episodes=10, visualize=False)
+        # Finally, evaluate our algorithm for 10 episodes.
+        dqn.test(env, nb_episodes=10, visualize=False)
+    else:
+        weights_filename = 'dqn_GhostRacer_weights_1000.h5f'
+        dqn.load_weights(weights_filename)
+        dqn.test(env, nb_episodes=10, visualize=True)

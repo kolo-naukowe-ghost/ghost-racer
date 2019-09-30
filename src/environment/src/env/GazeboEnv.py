@@ -32,8 +32,10 @@ class GazeboEnv(Env, GazeboMixin):
         self.observation_space = spaces.Box(0, 255, [240, 320, 3])  # size of image retrieved from center camera
         self.board = self._load_board()
         self.white_indices = np.argwhere(self.board == 255)
+        self.iteration = 0
 
     def step(self, action):
+        self.iteration += 1
         """
 
         :param action: int
@@ -52,11 +54,12 @@ class GazeboEnv(Env, GazeboMixin):
         _, distance = self._calculate_reward()
         reward = 0.7 - 14 / 1000 * distance + message.linear.x
         # if np.random.random() < .2 :
-        done = distance > 100  # distance greater than 1000 units  # TODO
+        done = distance > 100 or self.iteration >= 50  # distance greater than 1000 units  # TODO
 
         return observation.as_numpy_array(), reward, done, info
 
     def reset(self):
+        self.iteration = 0
         self._reset_gazebo()
         self._unpause_gazebo()
         self._get_observation()
