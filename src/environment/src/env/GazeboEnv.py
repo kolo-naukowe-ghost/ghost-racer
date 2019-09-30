@@ -28,7 +28,8 @@ class GazeboEnv(Env, GazeboMixin):
     def __init__(self):
         super(GazeboEnv, self).__init__()
         metadata = {'render.modes': ['human', 'rgb_array']}
-        self.action_space = spaces.Discrete(9)
+        self.action_space = spaces.Discrete(8)
+        self.observation_space = spaces.Box(0, 255, [240, 320, 3]) #size of image retrieved from center camera
         self.board = self._load_board()
         self.white_indices = np.argwhere(self.board == 255)
 
@@ -50,9 +51,9 @@ class GazeboEnv(Env, GazeboMixin):
         observation = self._get_observation()
         reward = self._calculate_reward()
 
-        done = False  # TODO?
+        done = 1/reward > 1000 # distance greater than 1000 units  # TODO
 
-        return observation, reward, done, info
+        return observation.as_numpy_array(), reward, done, info
 
     def reset(self):
         self._reset_gazebo()
@@ -60,6 +61,8 @@ class GazeboEnv(Env, GazeboMixin):
         self._get_observation()
         # TODO set state, and reward here
         self._pause_gazebo()
+
+        return self._get_observation().as_numpy_array()
 
     def render(self, mode='human'):
         if mode == 'rgb_array':
