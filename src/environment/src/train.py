@@ -1,6 +1,6 @@
 """
 Code taken from: https://github.com/keras-rl/keras-rl/blob/master/examples/dqn_cartpole.py (with some modifications)
-This code should not be used for any kind of rl problem.
+This code should only be used as an example. The agent doesn't learn anything meaningfull.
 """
 
 from env.GazeboEnv import GazeboEnv
