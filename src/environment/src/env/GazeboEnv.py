@@ -28,8 +28,8 @@ class GazeboEnv(Env, GazeboMixin):
     def __init__(self):
         super(GazeboEnv, self).__init__()
         metadata = {'render.modes': ['human', 'rgb_array']}
-        self.action_space = spaces.Discrete(8)
-        self.observation_space = spaces.Box(0, 255, [240, 320, 3]) #size of image retrieved from center camera
+        self.action_space = spaces.Discrete(5)
+        self.observation_space = spaces.Box(0, 255, [240, 320, 3])  # size of image retrieved from center camera
         self.board = self._load_board()
         self.white_indices = np.argwhere(self.board == 255)
 
@@ -49,9 +49,10 @@ class GazeboEnv(Env, GazeboMixin):
         self._pause_gazebo()
 
         observation = self._get_observation()
-        reward = self._calculate_reward()
-
-        done = 1/reward > 1000 # distance greater than 1000 units  # TODO
+        _, distance = self._calculate_reward()
+        reward = 0.7 - 14 / 1000 * distance + message.linear.x
+        # if np.random.random() < .2 :
+        done = distance > 100  # distance greater than 1000 units  # TODO
 
         return observation.as_numpy_array(), reward, done, info
 
@@ -96,7 +97,7 @@ class GazeboEnv(Env, GazeboMixin):
         # TODO more sophisticated reward function (?)
         reward = 1 / (distance + 0.001)
 
-        return reward
+        return reward, distance
 
     def _get_closest_point_on_board(self, relative_car_x, relative_car_y):
         """
@@ -110,11 +111,11 @@ class GazeboEnv(Env, GazeboMixin):
         # vector of differences of pixels' positions and car's position ex: [[x_pixel1 - x_car, y_pixel1 - y_car], ...]
         # dot product of each of these vector with itself gives us squared distance between a pixel and a car
         differences = self.white_indices - np.array([relative_car_x, relative_car_y])
-        distances_squared = np.sum(differences * differences, axis=1) #dot product of each row with itself
-        
+        distances_squared = np.sum(differences * differences, axis=1)  # dot product of each row with itself
+
         closest_point_index = np.argmin(distances_squared)
-        
-        return self.white_indices[closest_point_index], distances_squared[closest_point_index]**.5
+
+        return self.white_indices[closest_point_index], distances_squared[closest_point_index] ** .5
 
     def _get_message_from_action(self, action):
         """
@@ -129,22 +130,22 @@ class GazeboEnv(Env, GazeboMixin):
             twist.linear.x = self.LINEAR_ACTION
         elif action == 1:  # L
             twist.angular.z = -self.TWIST_ACTION
-        elif action == 2:  # B
-            twist.linear.x = -self.LINEAR_ACTION
-        elif action == 3:  # R
+        # elif action == 2:  # B
+        #     twist.linear.x = -self.LINEAR_ACTION
+        elif action == 2:  # R
             twist.angular.z = self.TWIST_ACTION
-        elif action == 4:  # FL
+        elif action == 3:  # FL
             twist.linear.x = self.LINEAR_ACTION
             twist.angular.z = -self.TWIST_ACTION
-        elif action == 5:  # FR
+        elif action == 4:  # FR
             twist.linear.x = self.LINEAR_ACTION
             twist.angular.z = self.TWIST_ACTION
-        elif action == 6:  # BL
-            twist.linear.x = -self.LINEAR_ACTION
-            twist.angular.z = -self.TWIST_ACTION
-        elif action == 7:  # BR
-            twist.linear.x = -self.LINEAR_ACTION
-            twist.angular.z = self.TWIST_ACTION
+        # elif action == 6:  # BL
+        #     twist.linear.x = -self.LINEAR_ACTION
+        #     twist.angular.z = -self.TWIST_ACTION
+        # elif action == 7:  # BR
+        #     twist.linear.x = -self.LINEAR_ACTION
+        #     twist.angular.z = self.TWIST_ACTION
         else:
             raise ValueError
 
@@ -177,5 +178,4 @@ class GazeboEnv(Env, GazeboMixin):
         img[pnt_r - distance:pnt_r + distance, pnt_c - distance:pnt_c + distance] = 255
         img = toimage(img)
         # img.show() # I was not able to make it work on my machine (in docker). Image is saved instead.
-        img.save("/home/ghost/ghost-racer/src/environment/src/env/data/car_and_closest_point.jpeg")
-
+        img.save("car_and_closest_point.jpeg")

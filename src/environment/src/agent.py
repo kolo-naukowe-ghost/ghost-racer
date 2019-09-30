@@ -9,13 +9,11 @@ def main():
     env = GazeboEnv()
     for _ in range(100000):
         observation, reward, done, info = env.step(6)
-        print(observation.shape)
-    print(observation)
 
 
 
 
 
 if __name__ == "__main__":
-    #main()
+    # main()
     train()
