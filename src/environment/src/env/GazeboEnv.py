@@ -10,6 +10,9 @@ from env.Env import Env
 from env.GazeboMixin import GazeboMixin
 from env.State import State
 
+import rospy
+
+import os
 
 class GazeboEnv(Env, GazeboMixin):
     # TODO It should not be hardcoded
@@ -23,13 +26,17 @@ class GazeboEnv(Env, GazeboMixin):
     LINEAR_ACTION = 0.3
     TWIST_ACTION = 0.25
 
-    BOARD_IMAGE_PATH = 'src/environment/src/env/data/board.jpeg'
+    BOARD_IMAGE_PATH = 'data/board.jpeg'
 
     def __init__(self):
         super(GazeboEnv, self).__init__()
         metadata = {'render.modes': ['human', 'rgb_array']}
+        self.cwd = os.path.abspath(os.path.dirname(__file__))
+
         self.action_space = spaces.Discrete(8)
         self.observation_space = spaces.Box(0, 255, [240, 320, 3]) #size of image retrieved from center camera
+        self.dump_board_image = True
+
         self.board = self._load_board()
         self.white_indices = np.argwhere(self.board == 255)
 
@@ -162,7 +169,11 @@ class GazeboEnv(Env, GazeboMixin):
         board image as numpy array with uint8 0,255 values
         :return:
         """
-        board_image = Image.open(self.BOARD_IMAGE_PATH).convert('L')
+        board_location = os.path.join(self.cwd, GazeboEnv.BOARD_IMAGE_PATH)
+        if not os.path.exists(board_location):
+            rospy.logerr('Path with image {} , doesn\'t exist.'.format(board_location))
+            return None
+        board_image = Image.open(board_location).convert('L')
         width, height = int(self.BOARD_WIDTH * 100), int(self.BOARD_HEIGHT * 100)
         board_image = board_image.resize((width, height), Image.ANTIALIAS)
         board_image = board_image.point(lambda p: p > 50)
@@ -176,6 +187,8 @@ class GazeboEnv(Env, GazeboMixin):
         img[car_x - distance:car_x + distance, car_y - distance:car_y + distance] = 255
         img[pnt_r - distance:pnt_r + distance, pnt_c - distance:pnt_c + distance] = 255
         img = toimage(img)
-        # img.show() # I was not able to make it work on my machine (in docker). Image is saved instead.
-        img.save("/home/ghost/ghost-racer/src/environment/src/env/data/car_and_closest_point.jpeg")
+
+        img_dir = os.path.join(self.cwd, 'data')
+        if self.dump_board_image and os.path.exists(img_dir):
+            img.save(os.path.join(img_dir, "car_and_closest_point.jpeg"))
 
