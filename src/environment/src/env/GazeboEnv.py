@@ -10,6 +10,9 @@ from env.Env import Env
 from env.GazeboMixin import GazeboMixin
 from env.State import State
 
+import rospy
+
+import os
 
 class GazeboEnv(Env, GazeboMixin):
     # TODO It should not be hardcoded
@@ -23,13 +26,19 @@ class GazeboEnv(Env, GazeboMixin):
     LINEAR_ACTION = 0.3
     TWIST_ACTION = 0.25
 
-    BOARD_IMAGE_PATH = 'src/environment/src/env/data/board.jpeg'
+    BOARD_IMAGE_PATH = 'data/board.jpeg'
 
     def __init__(self):
         super(GazeboEnv, self).__init__()
         metadata = {'render.modes': ['human', 'rgb_array']}
-        self.action_space = spaces.Discrete(9)
+        self.cwd = os.path.abspath(os.path.dirname(__file__))
+
+        self.action_space = spaces.Discrete(8)
+        self.observation_space = spaces.Box(0, 255, [240, 320, 3]) #size of image retrieved from center camera
+        self.dump_board_image = True
+
         self.board = self._load_board()
+        self.white_indices = np.argwhere(self.board == 255)
 
     def step(self, action):
         """
@@ -49,9 +58,9 @@ class GazeboEnv(Env, GazeboMixin):
         observation = self._get_observation()
         reward = self._calculate_reward()
 
-        done = False  # TODO?
+        done = 1/reward > 1000 # distance greater than 1000 units  # TODO
 
-        return observation, reward, done, info
+        return observation.as_numpy_array(), reward, done, info
 
     def reset(self):
         self._reset_gazebo()
@@ -59,6 +68,8 @@ class GazeboEnv(Env, GazeboMixin):
         self._get_observation()
         # TODO set state, and reward here
         self._pause_gazebo()
+
+        return self._get_observation().as_numpy_array()
 
     def render(self, mode='human'):
         if mode == 'rgb_array':
@@ -86,9 +97,31 @@ class GazeboEnv(Env, GazeboMixin):
         relative_car_x = int((self.BOARD_HEIGHT / 2 - car_y) * 100)
         relative_car_y = int((car_x + self.BOARD_WIDTH / 2) * 100)
 
-        self._print_car_position_on_board(relative_car_x, relative_car_y)
-        # TODO find distance from car to nearest center of road
-        return 0
+        point, distance = self._get_closest_point_on_board(relative_car_x, relative_car_y)
+        self._print_car_position_on_board(relative_car_x, relative_car_y, point)
+
+        # TODO more sophisticated reward function (?)
+        reward = 1 / (distance + 0.001)
+
+        return reward
+
+    def _get_closest_point_on_board(self, relative_car_x, relative_car_y):
+        """
+
+        :param relative_car_x: int, relative_car_y: int
+        :return: closest_point_index: np.array, distance: float
+        """
+
+        car_position = np.array([relative_car_x, relative_car_y])
+
+        # vector of differences of pixels' positions and car's position ex: [[x_pixel1 - x_car, y_pixel1 - y_car], ...]
+        # dot product of each of these vector with itself gives us squared distance between a pixel and a car
+        differences = self.white_indices - np.array([relative_car_x, relative_car_y])
+        distances_squared = np.sum(differences * differences, axis=1) #dot product of each row with itself
+        
+        closest_point_index = np.argmin(distances_squared)
+        
+        return self.white_indices[closest_point_index], distances_squared[closest_point_index]**.5
 
     def _get_message_from_action(self, action):
         """
@@ -136,15 +169,26 @@ class GazeboEnv(Env, GazeboMixin):
         board image as numpy array with uint8 0,255 values
         :return:
         """
-        board_image = Image.open(self.BOARD_IMAGE_PATH).convert('L')
+        board_location = os.path.join(self.cwd, GazeboEnv.BOARD_IMAGE_PATH)
+        if not os.path.exists(board_location):
+            rospy.logerr('Path with image {} , doesn\'t exist.'.format(board_location))
+            return None
+        board_image = Image.open(board_location).convert('L')
         width, height = int(self.BOARD_WIDTH * 100), int(self.BOARD_HEIGHT * 100)
         board_image = board_image.resize((width, height), Image.ANTIALIAS)
         board_image = board_image.point(lambda p: p > 50)
         image_array = np.array(board_image) * 255
         return image_array
 
-    def _print_car_position_on_board(self, car_x, car_y):
+    def _print_car_position_on_board(self, car_x, car_y, closest_point):
+        pnt_r, pnt_c = closest_point
         distance = 15
-        img = self.board
+        img = self.board.copy()
         img[car_x - distance:car_x + distance, car_y - distance:car_y + distance] = 255
-        toimage(img).show()
+        img[pnt_r - distance:pnt_r + distance, pnt_c - distance:pnt_c + distance] = 255
+        img = toimage(img)
+
+        img_dir = os.path.join(self.cwd, 'data')
+        if self.dump_board_image and os.path.exists(img_dir):
+            img.save(os.path.join(img_dir, "car_and_closest_point.jpeg"))
+
