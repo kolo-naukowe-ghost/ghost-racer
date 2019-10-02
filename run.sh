@@ -16,7 +16,7 @@ build () {
 
 run () {
     echo "Running from directory $cwd"
-    xterm -T main -ls -xrm 'XTerm*selectToClipboard:true' -e "/bin/bash -c \"cd $cwd;source devel/setup.bash ; roslaunch autonomous_driving_world spawn_major_in_competition_track_D1_D2_B1_P1.launch\"" &
+    xterm -T main -ls -xrm 'XTerm*selectToClipboard:true' -e "/bin/bash -c \"cd $cwd;source devel/setup.bash ; roslaunch autonomous_driving_world spawn_conde_in_competition_track_D1_D2_B1_P1.launch\"" &
     xterm -T video_reader -ls -xrm 'XTerm*selectToClipboard:true' -e "/bin/bash -c \"${cwd}/devel/lib/stub_video_reader/stub_video_reader_node \"" &
 }
 
