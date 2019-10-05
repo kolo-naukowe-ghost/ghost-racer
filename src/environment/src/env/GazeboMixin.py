@@ -48,15 +48,9 @@ class GazeboMixin(object):
         """
         self.cmd_vel.publish(message)
 
-    def _get_model_states(self):
-        """
-        for more information type: rosservice call /gazebo/get_model_state
-        empty string in model_state is very important because
-        it means that you want to get state of whole model, not only specific link
-        :return: model_state: State
-        """
+    def _get_model_state(self, model_name='', relative_entity_name=''):
         try:
-            model_state = self.model_state('conde', '')
+            model_state = self.model_state(model_name, relative_entity_name)
             return model_state
         except:
             return None
