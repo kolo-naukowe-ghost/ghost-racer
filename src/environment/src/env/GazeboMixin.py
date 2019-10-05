@@ -55,10 +55,11 @@ class GazeboMixin(object):
         it means that you want to get state of whole model, not only specific link
         :return: model_state: State
         """
-        # TODO try except?
-        model_state = self.model_state('conde', '')
-        return model_state
+        try:
+            model_state = self.model_state('conde', '')
+            return model_state
+        except:
+            return None
 
     def _ros_sleep(self):
         self.sleep_timer.sleep()  # sleep for 1/rate sec
-

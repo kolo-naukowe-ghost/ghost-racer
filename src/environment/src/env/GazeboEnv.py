@@ -165,8 +165,10 @@ class GazeboEnv(Env, GazeboMixin):
 
     def _get_car_position(self):
         model_state = self._get_model_states()
-        position = model_state.pose.position
-        return position.x, position.y
+        position = (0,0)
+        if model_state is not None:
+            position = (model_state.pose.position.x, model_state.pose.position.y)
+        return position
 
     def _load_board(self):
         """
