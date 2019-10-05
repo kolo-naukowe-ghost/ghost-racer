@@ -118,16 +118,13 @@ class GazeboEnv(Env, GazeboMixin):
         :return: closest_point_index: np.array, distance: float
         """
 
-        car_position = np.array([relative_car_x, relative_car_y])
-
         # vector of differences of pixels' positions and car's position ex: [[x_pixel1 - x_car, y_pixel1 - y_car], ...]
         # dot product of each of these vector with itself gives us squared distance between a pixel and a car
         differences = self.white_indices - np.array([relative_car_x, relative_car_y])
-        distances_squared = np.sum(differences * differences, axis=1) #dot product of each row with itself
-        
+        distances_squared = np.sum(differences * differences, axis=1)  # dot product of each row with itself
         closest_point_index = np.argmin(distances_squared)
-        
-        return self.white_indices[closest_point_index], distances_squared[closest_point_index]**.5
+
+        return self.white_indices[closest_point_index], distances_squared[closest_point_index] ** .5
 
     def _get_message_from_action(self, action):
         """
