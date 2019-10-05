@@ -18,6 +18,7 @@ fi
 
 docker run -it --rm \
     -e DISPLAY=${display} \
+    -e QT_X11_NO_MITSHM=1 \
     -p 11311:11311 \
     -v /tmp/.X11-unix/:/tmp/.X11-unix/ \
     -v $ghost_racer_root_dir:$docker_ghost_racer_root_dir \

@@ -16,7 +16,6 @@ class GazeboMixin(object):
         self.unpause_service = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
         self.pause_service = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
         self.cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
-        self.center_camera_topic = rospy.Subscriber('/conde_camera_signalling_panel/image_raw', Image, self.center_image_callback)
         # TODO change it to 50 when you finish testing
         self.sleep_timer = rospy.Rate(1)
 
@@ -63,17 +62,3 @@ class GazeboMixin(object):
     def _ros_sleep(self):
         self.sleep_timer.sleep()  # sleep for 1/rate sec
 
-    def center_image_callback(self, raw_image):
-        pass
-
-
-    @staticmethod
-    def _get_image_data_from_topic(topic):
-        image = None
-        while image is None:
-            try:
-                image = rospy.wait_for_message(topic, Image, timeout=5)
-                image = CvBridge().imgmsg_to_cv2(image, "bgr8")
-            except ROSException:
-                return None
-        return image

@@ -13,8 +13,8 @@ from env.State import State
 import rospy
 
 import os
-import cv2
-from cv_bridge import CvBridge
+
+from image_processing.ros_image import RosImage
 
 
 class GazeboEnv(Env, GazeboMixin):
@@ -32,8 +32,7 @@ class GazeboEnv(Env, GazeboMixin):
     BOARD_IMAGE_PATH = 'data/board.jpeg'
 
     def __init__(self):
-        self.show_images = False
-        self.center_window_name = "center"
+        self.show_images = True
         super(GazeboEnv, self).__init__()
         metadata = {'render.modes': ['human', 'rgb_array']}
         self.cwd = os.path.abspath(os.path.dirname(__file__))
@@ -45,11 +44,15 @@ class GazeboEnv(Env, GazeboMixin):
         self.board = self._load_board()
         self.white_indices = np.argwhere(self.board == 255)
 
+        # add center camera image
+        self.center_image = RosImage(GazeboEnv.CENTER_CAMERA_TOPIC)
+        self.center_image.image_received_callback = self.center_image_callback
+        self.center_image.display_image = self.show_images
+
+        self.reset()
+
     def center_image_callback(self, raw_image):
-        image = CvBridge().imgmsg_to_cv2(raw_image, "bgr8")
-        if self.show_images:
-            cv2.imshow(self.center_window_name, image)
-            cv2.waitKey(1)
+        pass
 
     def step(self, action):
         """
@@ -93,14 +96,11 @@ class GazeboEnv(Env, GazeboMixin):
 
     def _get_observation(self):
         """
-
         :return: State
         """
-        left_image = self._get_image_data_from_topic(self.LEFT_CAMERA_TOPIC)
-        center_image = self._get_image_data_from_topic(self.CENTER_CAMERA_TOPIC)
-        right_image = self._get_image_data_from_topic(self.RIGHT_CAMERA_TOPIC)
 
-        state = State(left_image, center_image, right_image)
+        center_image = self.center_image.image
+        state = State(None, center_image, None)
         return state
 
     def _calculate_reward(self):
