@@ -17,7 +17,7 @@ class GazeboMixin(object):
         self.pause_service = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
         self.cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
         # TODO change it to 50 when you finish testing
-        self.sleep_timer = rospy.Rate(1)
+        self.sleep_timer = rospy.Rate(60)
 
     def _unpause_gazebo(self):
         rospy.wait_for_service('/gazebo/unpause_physics')
