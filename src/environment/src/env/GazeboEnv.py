@@ -13,6 +13,9 @@ from env.State import State
 import rospy
 
 import os
+import cv2
+from cv_bridge import CvBridge
+
 
 class GazeboEnv(Env, GazeboMixin):
     # TODO It should not be hardcoded
@@ -29,6 +32,8 @@ class GazeboEnv(Env, GazeboMixin):
     BOARD_IMAGE_PATH = 'data/board.jpeg'
 
     def __init__(self):
+        self.show_images = False
+        self.center_window_name = "center"
         super(GazeboEnv, self).__init__()
         metadata = {'render.modes': ['human', 'rgb_array']}
         self.cwd = os.path.abspath(os.path.dirname(__file__))
@@ -39,6 +44,12 @@ class GazeboEnv(Env, GazeboMixin):
 
         self.board = self._load_board()
         self.white_indices = np.argwhere(self.board == 255)
+
+    def center_image_callback(self, raw_image):
+        image = CvBridge().imgmsg_to_cv2(raw_image, "bgr8")
+        if self.show_images:
+            cv2.imshow(self.center_window_name, image)
+            cv2.waitKey(1)
 
     def step(self, action):
         """
