@@ -61,27 +61,22 @@ class GazeboEnv(Env, GazeboMixin):
         :return: observation: State, reward: float, done: bool, info: dict
         """
         info = dict()
-
         message = self._get_message_from_action(action)
 
-        self._unpause_gazebo()
         self._publish_gazebo(message)
         self._ros_sleep()
-        self._pause_gazebo()
 
         observation = self._get_observation()
         reward = self._calculate_reward()
 
-        done = 1/reward > 1000 # distance greater than 1000 units  # TODO
+        done = 1 / reward > 150  # distance greater than 150 units  # TODO
 
         return observation.as_numpy_array(), reward, done, info
 
     def reset(self):
         self._reset_gazebo()
-        self._unpause_gazebo()
         self._get_observation()
         # TODO set state, and reward here
-        self._pause_gazebo()
 
         return self._get_observation().as_numpy_array()
 
