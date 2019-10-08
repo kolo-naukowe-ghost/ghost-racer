@@ -17,7 +17,7 @@ class GazeboMixin(object):
         self.pause_service = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
         self.cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
         # TODO change it to 50 when you finish testing
-        self.sleep_timer = rospy.Rate(1)
+        self.sleep_timer = rospy.Rate(60)
 
     def _unpause_gazebo(self):
         rospy.wait_for_service('/gazebo/unpause_physics')
@@ -48,27 +48,12 @@ class GazeboMixin(object):
         """
         self.cmd_vel.publish(message)
 
-    def _get_model_states(self):
-        """
-        for more information type: rosservice call /gazebo/get_model_state
-        empty string in model_state is very important because
-        it means that you want to get state of whole model, not only specific link
-        :return: model_state: State
-        """
-        # TODO try except?
-        model_state = self.model_state('conde', '')
-        return model_state
+    def _get_model_state(self, model_name='', relative_entity_name=''):
+        try:
+            model_state = self.model_state(model_name, relative_entity_name)
+            return model_state
+        except:
+            return None
 
     def _ros_sleep(self):
         self.sleep_timer.sleep()  # sleep for 1/rate sec
-
-    @staticmethod
-    def _get_image_data_from_topic(topic):
-        image = None
-        while image is None:
-            try:
-                image = rospy.wait_for_message(topic, Image, timeout=5)
-                image = CvBridge().imgmsg_to_cv2(image, "bgr8")
-            except ROSException:
-                return None
-        return image

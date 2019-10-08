@@ -2,10 +2,12 @@
 
 from env.GazeboEnv import GazeboEnv
 from train import train
+import rospy
 
 """
-Remember to install missing dependencies with "rosdep install environment"
+    Remember to install missing dependencies with "rosdep install environment"
 """
+
 
 def main():
     env = GazeboEnv()
@@ -14,9 +16,9 @@ def main():
     print(observation)
 
 
-
-
-
 if __name__ == "__main__":
-    #main()
-    train()
+    try:
+        # main()
+        train()
+    except rospy.ROSInterruptException:
+        print("Agent has been closed.")

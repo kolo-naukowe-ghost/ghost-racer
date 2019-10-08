@@ -8,11 +8,13 @@ import matplotlib.pyplot as plt
 
 from env.Env import Env
 from env.GazeboMixin import GazeboMixin
-from env.State import State
 
 import rospy
 
 import os
+
+from image_processing.ros_image import RosImage
+
 
 class GazeboEnv(Env, GazeboMixin):
     # TODO It should not be hardcoded
@@ -29,6 +31,7 @@ class GazeboEnv(Env, GazeboMixin):
     BOARD_IMAGE_PATH = 'data/board.jpeg'
 
     def __init__(self):
+        self.show_images = True
         super(GazeboEnv, self).__init__()
         metadata = {'render.modes': ['human', 'rgb_array']}
         self.cwd = os.path.abspath(os.path.dirname(__file__))
@@ -40,6 +43,16 @@ class GazeboEnv(Env, GazeboMixin):
         self.board = self._load_board()
         self.white_indices = np.argwhere(self.board == 255)
 
+        # add center camera image
+        self.center_image = RosImage(GazeboEnv.CENTER_CAMERA_TOPIC)
+        self.center_image.image_received_callback = self.center_image_callback
+        self.center_image.display_image = self.show_images
+
+        self.reset()
+
+    def center_image_callback(self, raw_image):
+        pass
+
     def step(self, action):
         """
 
@@ -47,29 +60,24 @@ class GazeboEnv(Env, GazeboMixin):
         :return: observation: State, reward: float, done: bool, info: dict
         """
         info = dict()
-
         message = self._get_message_from_action(action)
 
-        self._unpause_gazebo()
         self._publish_gazebo(message)
         self._ros_sleep()
-        self._pause_gazebo()
 
         observation = self._get_observation()
         reward = self._calculate_reward()
 
-        done = 1/reward > 1000 # distance greater than 1000 units  # TODO
+        done = 1 / reward > 150  # distance greater than 150 units  # TODO
 
-        return observation.as_numpy_array(), reward, done, info
+        return observation, reward, done, info
 
     def reset(self):
         self._reset_gazebo()
-        self._unpause_gazebo()
         self._get_observation()
         # TODO set state, and reward here
-        self._pause_gazebo()
 
-        return self._get_observation().as_numpy_array()
+        return self._get_observation()
 
     def render(self, mode='human'):
         if mode == 'rgb_array':
@@ -82,15 +90,10 @@ class GazeboEnv(Env, GazeboMixin):
 
     def _get_observation(self):
         """
-
         :return: State
         """
-        left_image = self._get_image_data_from_topic(self.LEFT_CAMERA_TOPIC)
-        center_image = self._get_image_data_from_topic(self.CENTER_CAMERA_TOPIC)
-        right_image = self._get_image_data_from_topic(self.RIGHT_CAMERA_TOPIC)
 
-        state = State(left_image, center_image, right_image)
-        return state
+        return self.center_image.image
 
     def _calculate_reward(self):
         car_x, car_y = self._get_car_position()
@@ -112,16 +115,13 @@ class GazeboEnv(Env, GazeboMixin):
         :return: closest_point_index: np.array, distance: float
         """
 
-        car_position = np.array([relative_car_x, relative_car_y])
-
         # vector of differences of pixels' positions and car's position ex: [[x_pixel1 - x_car, y_pixel1 - y_car], ...]
         # dot product of each of these vector with itself gives us squared distance between a pixel and a car
         differences = self.white_indices - np.array([relative_car_x, relative_car_y])
-        distances_squared = np.sum(differences * differences, axis=1) #dot product of each row with itself
-        
+        distances_squared = np.sum(differences * differences, axis=1)  # dot product of each row with itself
         closest_point_index = np.argmin(distances_squared)
-        
-        return self.white_indices[closest_point_index], distances_squared[closest_point_index]**.5
+
+        return self.white_indices[closest_point_index], distances_squared[closest_point_index] ** .5
 
     def _get_message_from_action(self, action):
         """
@@ -158,9 +158,11 @@ class GazeboEnv(Env, GazeboMixin):
         return twist
 
     def _get_car_position(self):
-        model_state = self._get_model_states()
-        position = model_state.pose.position
-        return position.x, position.y
+        model_state = self._get_model_state('conde')
+        position = (0,0)
+        if model_state is not None:
+            position = (model_state.pose.position.x, model_state.pose.position.y)
+        return position
 
     def _load_board(self):
         """
