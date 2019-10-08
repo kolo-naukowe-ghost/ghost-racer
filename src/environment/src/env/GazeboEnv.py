@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 
 from env.Env import Env
 from env.GazeboMixin import GazeboMixin
-from env.State import State
 
 import rospy
 
@@ -71,14 +70,14 @@ class GazeboEnv(Env, GazeboMixin):
 
         done = 1 / reward > 150  # distance greater than 150 units  # TODO
 
-        return observation.as_numpy_array(), reward, done, info
+        return observation, reward, done, info
 
     def reset(self):
         self._reset_gazebo()
         self._get_observation()
         # TODO set state, and reward here
 
-        return self._get_observation().as_numpy_array()
+        return self._get_observation()
 
     def render(self, mode='human'):
         if mode == 'rgb_array':
@@ -94,9 +93,7 @@ class GazeboEnv(Env, GazeboMixin):
         :return: State
         """
 
-        center_image = self.center_image.image
-        state = State(None, center_image, None)
-        return state
+        return self.center_image.image
 
     def _calculate_reward(self):
         car_x, car_y = self._get_car_position()
