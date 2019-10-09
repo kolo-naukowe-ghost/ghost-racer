@@ -5,7 +5,10 @@ import rospy
 
 _PATH_TO_IMAGE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "dotted_board.jpeg")
 
-_BOARD_CENTER = np.array([1050, 2040]).T
+# _BOARD_CENTER = np.array([1050, 2040]).T
+_BOARD_CENTER1 = np.array([500, 460][::-1])
+_BOARD_CENTER2 = np.array([500,1170][::-1])
+_MIDDLE_BOARD_POINT = 840
 
 def _get_angle_between_vector_and_x_axis(vec):
     angle = np.arctan2(vec[1], vec[0])
@@ -13,21 +16,21 @@ def _get_angle_between_vector_and_x_axis(vec):
         angle = 2 * np.pi + angle
     return angle
 
+def sort_dots(dots, reverse = False):
+    angles = [_get_angle_between_vector_and_x_axis(dot) for dot in dots]
+    angles_and_dots = [(angle, dot) for angle, dot in zip(angles, dots)]
+    print("sorting...")
+    angles_and_dots.sort(reverse=reverse)
+    print("after sort")
+    print(angles_and_dots)
+    return np.array([dot for _, dot in angles_and_dots])
+
 class BoardPath:
 
     def __init__(self):
-        pixels = self._load_board()
-        print(np.max(pixels), np.min(pixels))
-        dots = np.argwhere(pixels == 255)
-        dots = dots - _BOARD_CENTER
-        angles = [_get_angle_between_vector_and_x_axis(dot) for dot in dots]
-        dots = dots + _BOARD_CENTER
-
-        angles_and_dots = [(angle, dot) for angle, dot in zip(angles, dots)]
-        print("sorting...")
-        angles_and_dots.sort()
-        print("after sort")
-        self.dots = [dot for _, dot in angles_and_dots]
+        checkpoints = self._load_board()
+        checkpoints = self._order_checkpoints(checkpoints)
+        self.dots = checkpoints
         self.current_checkpoint_index = 0
 
         self.car_size = 100 #hardcoded for debugging
@@ -77,22 +80,56 @@ class BoardPath:
         denominator = np.sqrt(a**2 + 1)
         return nominator / denominator
 
+    def _order_checkpoints(self, checkpoints):
+        # TODO
+        """
+        dots = checkpoints
+        dots = np.argwhere(pixels > 0)
+        upper_dots = dots[dots[:, 0] <= _MIDDLE_BOARD_POINT] - _BOARD_CENTER1
+        lower_dots = dots[dots[:, 0] > _MIDDLE_BOARD_POINT] - _BOARD_CENTER2
+        upper_dots = sort_dots(upper_dots) + _BOARD_CENTER1
+        lower_dots = sort_dots(lower_dots, reverse=True) + _BOARD_CENTER2
+
+        return np.concatenate([upper_dots, lower_dots], 0)
+        """
+        return checkpoints
+
     def _load_board(self):
-        """
-        This function loads image, resize to BOARD_WIDTH x BOARD_HEIGHT
-        and after that apply threshold, scale values to 0, 255 and return
-        board image as numpy array with uint8 0,255 values
-        :return:
-        """
-        BOARD_WIDTH = 6.95
-        BOARD_HEIGHT = 16.7
-        board_location = _PATH_TO_IMAGE
-        if not os.path.exists(board_location):
-            rospy.logerr('Path with image {} , doesn\'t exist.'.format(board_location))
-            return None
-        board_image = Image.open(board_location).convert('L')
-        width, height = int(BOARD_WIDTH * 100), int(BOARD_HEIGHT * 100)
-        board_image = board_image.resize((width, height))
-        board_image = board_image.point(lambda p: p > 50)
-        image_array = np.array(board_image) * 255
-        return image_array
+        # TODO
+        # load from file
+        checkpoints = np.array([
+            [526, 342],
+            [500, 222],
+            [412, 130],
+            [318, 102], 
+            [164, 145],
+            [112, 224],
+            [88 , 332],
+            [118, 446],
+            [194, 530],
+            [318, 566],
+            [390, 576],
+            [464, 632],
+            [460, 1046],
+            [386, 1100],
+            [314, 1118],
+            [248, 1122],
+            [178, 1152],
+            [114, 1224],
+            [88 , 1308],
+            [90 , 1392],
+            [122, 1470],
+            [182, 1534],
+            [248, 1570],
+            [326, 1574],
+            [408, 1544],
+            [468, 1496],
+            [510, 1426],
+            [524, 1330],
+            [526, 1186],
+            [526, 982],
+            [526, 734],
+            [526, 532],
+        ])
+        checkpoints = [chp[::-1] for chp in checkpoints]
+        return checkpoints
