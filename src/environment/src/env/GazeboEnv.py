@@ -15,6 +15,7 @@ import os
 
 from image_processing.ros_image import RosImage
 
+from board_path import BoardPath, _BOARD_CENTER
 
 class GazeboEnv(Env, GazeboMixin):
     # TODO It should not be hardcoded
@@ -48,6 +49,7 @@ class GazeboEnv(Env, GazeboMixin):
         self.center_image.image_received_callback = self.center_image_callback
         self.center_image.display_image = self.show_images
 
+        self.board_path = BoardPath()
         self.reset()
 
     def center_image_callback(self, raw_image):
@@ -99,7 +101,7 @@ class GazeboEnv(Env, GazeboMixin):
         car_x, car_y = self._get_car_position()
         relative_car_x = int((self.BOARD_HEIGHT / 2 - car_y) * 100)
         relative_car_y = int((car_x + self.BOARD_WIDTH / 2) * 100)
-
+        self.board_path.update(relative_car_x, relative_car_y)
         point, distance = self._get_closest_point_on_board(relative_car_x, relative_car_y)
         self._print_car_position_on_board(relative_car_x, relative_car_y, point)
 
@@ -114,14 +116,7 @@ class GazeboEnv(Env, GazeboMixin):
         :param relative_car_x: int, relative_car_y: int
         :return: closest_point_index: np.array, distance: float
         """
-
-        # vector of differences of pixels' positions and car's position ex: [[x_pixel1 - x_car, y_pixel1 - y_car], ...]
-        # dot product of each of these vector with itself gives us squared distance between a pixel and a car
-        differences = self.white_indices - np.array([relative_car_x, relative_car_y])
-        distances_squared = np.sum(differences * differences, axis=1)  # dot product of each row with itself
-        closest_point_index = np.argmin(distances_squared)
-
-        return self.white_indices[closest_point_index], distances_squared[closest_point_index] ** .5
+        return self.board_path.current_checkpoint, self.board_path.distance_to_road()
 
     def _get_message_from_action(self, action):
         """
@@ -184,10 +179,12 @@ class GazeboEnv(Env, GazeboMixin):
 
     def _print_car_position_on_board(self, car_x, car_y, closest_point):
         pnt_r, pnt_c = closest_point
+        r,c = _BOARD_CENTER
         distance = 15
         img = self.board.copy()
         img[car_x - distance:car_x + distance, car_y - distance:car_y + distance] = 255
         img[pnt_r - distance:pnt_r + distance, pnt_c - distance:pnt_c + distance] = 255
+        img[r - distance:r + distance, c - distance:c + distance] = 100
         img = toimage(img)
 
         img_dir = os.path.join(self.cwd, 'data')
