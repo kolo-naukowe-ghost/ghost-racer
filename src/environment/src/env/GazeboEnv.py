@@ -16,6 +16,7 @@ import os
 from image_processing.ros_image import RosImage
 
 from board_path import BoardPath, _BOARD_CENTER
+from board_path import BoardPath, _BOARD_CENTER1, _BOARD_CENTER2
 
 class GazeboEnv(Env, GazeboMixin):
     # TODO It should not be hardcoded
@@ -179,12 +180,14 @@ class GazeboEnv(Env, GazeboMixin):
 
     def _print_car_position_on_board(self, car_x, car_y, closest_point):
         pnt_r, pnt_c = closest_point
-        r,c = _BOARD_CENTER
         distance = 15
         img = self.board.copy()
         img[car_x - distance:car_x + distance, car_y - distance:car_y + distance] = 255
         img[pnt_r - distance:pnt_r + distance, pnt_c - distance:pnt_c + distance] = 255
-        img[r - distance:r + distance, c - distance:c + distance] = 100
+        for r,c in [_BOARD_CENTER1, _BOARD_CENTER2]:
+            img[r - distance:r + distance, c - distance:c + distance] = 100
+        # for i,(r,c) in enumerate(self.board_path.dots):
+        #     img[r - distance:r + distance, c - distance:c + distance] = max(0, 255 - int(i * 255 / len(self.board_path.dots)))
         img = toimage(img)
 
         img_dir = os.path.join(self.cwd, 'data')
