@@ -37,6 +37,7 @@ run () {
     if wait_for_program gzserver 10 ; then
         echo "Starting agent"
         xterm -hold -T agent_node -ls -xrm 'XTerm*selectToClipboard:true' -e "/bin/bash -c \"cd $cwd; source devel/setup.bash; rosrun environment agent.py\"" &
+        xterm -hold -T main_node -ls -xrm 'XTerm*selectToClipboard:true' -e "/bin/bash -c \"cd $cwd; source devel/setup.bash; rosrun main_node main.py\""
     else
         echo "Failed to open agent, quitting ghost-racer"
         ./kill_ros.sh
