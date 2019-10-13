@@ -33,10 +33,10 @@ build () {
 
 run () {
     echo "Running from directory $cwd"
-    xterm -T main -ls -xrm 'XTerm*selectToClipboard:true' -e "/bin/bash -c \"cd $cwd;source devel/setup.bash ; roslaunch autonomous_driving_world spawn_conde_in_competition_track_D1_D2_B1_P1.launch\"" &
+    xterm -T environment_node -ls -xrm 'XTerm*selectToClipboard:true' -e "/bin/bash -c \"cd $cwd;source devel/setup.bash ; roslaunch autonomous_driving_world spawn_conde_in_competition_track_D1_D2_B1_P1.launch\"" &
     if wait_for_program gzserver 10 ; then
         echo "Starting agent"
-        xterm -hold -T agent -ls -xrm 'XTerm*selectToClipboard:true' -e "/bin/bash -c \"cd $cwd; source devel/setup.bash; rosrun environment agent.py\"" &
+        xterm -hold -T agent_node -ls -xrm 'XTerm*selectToClipboard:true' -e "/bin/bash -c \"cd $cwd; source devel/setup.bash; rosrun environment agent.py\"" &
     else
         echo "Failed to open agent, quitting ghost-racer"
         ./kill_ros.sh
