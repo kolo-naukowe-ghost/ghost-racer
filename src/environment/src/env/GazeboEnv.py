@@ -206,7 +206,7 @@ class GazeboEnv(Env, GazeboMixin):
             img[r - distance:r + distance, c - distance:c + distance] = 100
         # for i,(r,c) in enumerate(self.board_path.dots):
         #     img[r - distance:r + distance, c - distance:c + distance] = max(0, 255 - int(i * 255 / len(self.board_path.dots)))
-        cv2.imshow(self.position_window_name, img)
+
         self.current_position = img.copy()
         img = toimage(img)
 
