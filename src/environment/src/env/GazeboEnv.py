@@ -118,9 +118,11 @@ class GazeboEnv(Env, GazeboMixin):
 
     def _calculate_reward(self):
         car_x, car_y = self._get_car_position()
-        relative_car_x = int((self.BOARD_HEIGHT / 2 - car_y) * 100)
-        relative_car_y = int((car_x + self.BOARD_WIDTH / 2) * 100)
+        relative_car_x = (self.BOARD_HEIGHT / 2 - car_y) * 100
+        relative_car_y = (car_x + self.BOARD_WIDTH / 2) * 100
         self.board_path.update(relative_car_x, relative_car_y)
+        relative_car_x = int(relative_car_x)
+        relative_car_y = int(relative_car_y)
         point, distance = self._get_closest_point_on_board(relative_car_x, relative_car_y)
         self._print_car_position_on_board(relative_car_x, relative_car_y, point)
 
