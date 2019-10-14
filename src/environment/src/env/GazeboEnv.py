@@ -38,9 +38,11 @@ class GazeboEnv(Env, GazeboMixin):
         metadata = {'render.modes': ['human', 'rgb_array']}
         self.cwd = os.path.abspath(os.path.dirname(__file__))
 
+        self.current_position = None
+
         self.position_window_name = "ghost's position"
         self.center_image_window_name = "ghost's view"
-        self.init_renderers()
+        self.renderers_initialized = False
 
         self.action_space = spaces.Discrete(8)
         self.observation_space = spaces.Box(0, 255, [240, 320, 3]) #size of image retrieved from center camera
@@ -51,13 +53,12 @@ class GazeboEnv(Env, GazeboMixin):
 
         # add center camera image
         self.center_image = RosImage(GazeboEnv.CENTER_CAMERA_TOPIC)
-        self.center_image.image_received_callback = self.center_image_callback
-        self.center_image.display_image = self.show_images
 
         self.board_path = BoardPath()
         self.reset()
 
     def init_renderers(self):
+        self.renderers_initialized = True
         flags = 2
         cv2.namedWindow(self.center_image_window_name, flags)
         cv2.namedWindow(self.position_window_name, flags)
@@ -79,14 +80,11 @@ class GazeboEnv(Env, GazeboMixin):
 
         observation = self._get_observation()
 
-        if RosImage.is_image_valid(self.center_image.image):
-            cv2.imshow(self.center_image_window_name, self.center_image.image)
-
         reward = self._calculate_reward()
 
         done = 1 / reward > 150  # distance greater than 150 units  # TODO
 
-        cv2.waitKey(1)
+
         return observation, reward, done, info
 
     def reset(self):
@@ -97,10 +95,17 @@ class GazeboEnv(Env, GazeboMixin):
         return self._get_observation()
 
     def render(self, mode='human'):
+        rospy.loginfo('rendering, mode is ' + mode)
         if mode == 'rgb_array':
             return np.array(self.observation)
         elif mode == 'human':
-            # TODO some window?
+            if not self.renderers_initialized:
+                self.init_renderers()
+            if RosImage.is_image_valid(self.center_image.image):
+                cv2.imshow(self.center_image_window_name, self.center_image.image)
+            if RosImage.is_image_valid(self.current_position):
+                cv2.imshow(self.position_window_name, self.current_position)
+            cv2.waitKey(1)
             return None
         else:
             super(GazeboEnv, self).render(mode=mode)  # just raise an exception
@@ -197,12 +202,13 @@ class GazeboEnv(Env, GazeboMixin):
         distance = 15
         img = self.board.copy()
         img[car_x - distance:car_x + distance, car_y - distance:car_y + distance] = 255
-        img[pnt_r - distance:pnt_r + distance, pnt_c - distance:pnt_c + distance] = 255
+        # img[pnt_r - distance:pnt_r + distance, pnt_c - distance:pnt_c + distance] = 255
         for r,c in [_BOARD_CENTER1, _BOARD_CENTER2]:
             img[r - distance:r + distance, c - distance:c + distance] = 100
         # for i,(r,c) in enumerate(self.board_path.dots):
         #     img[r - distance:r + distance, c - distance:c + distance] = max(0, 255 - int(i * 255 / len(self.board_path.dots)))
         cv2.imshow(self.position_window_name, img)
+        self.current_position = img.copy()
         img = toimage(img)
 
         img_dir = os.path.join(self.cwd, 'data')

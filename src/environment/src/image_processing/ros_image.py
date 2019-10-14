@@ -10,7 +10,6 @@ class RosImage():
         self.center_camera_topic = \
             rospy.Subscriber(self.topic_name, Image, self.image_callback)
         self.image = None
-        self.display_image = False
 
     def image_callback(self, raw_image):
         self.image = CvBridge().imgmsg_to_cv2(raw_image, "bgr8")

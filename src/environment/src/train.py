@@ -38,9 +38,9 @@ def train():
     dqn = DQNAgent(model=model, nb_actions=nb_actions, memory=memory, nb_steps_warmup=10,
                    target_model_update=1e-2, policy=policy)
     dqn.compile(Adam(lr=1e-3), metrics=['mae'])
-    
-    dqn.fit(env, nb_steps=50000, visualize=False, verbose=2)
-    
+
+    dqn.fit(env, nb_steps=50000, visualize=True, verbose=2)
+
     #dqn.save_weights('dqn_{}_weights.h5f'.format(ENV_NAME), overwrite=True)
 
     dqn.test(env, nb_episodes=5, visualize=False)
