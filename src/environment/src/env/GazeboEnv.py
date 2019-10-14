@@ -95,7 +95,6 @@ class GazeboEnv(Env, GazeboMixin):
         return self._get_observation()
 
     def render(self, mode='human'):
-        rospy.loginfo('rendering, mode is ' + mode)
         if mode == 'rgb_array':
             return np.array(self.observation)
         elif mode == 'human':
