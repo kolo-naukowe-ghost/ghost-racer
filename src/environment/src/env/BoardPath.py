@@ -26,7 +26,10 @@ def sort_dots(dots, reverse = False):
     return np.array([dot for _, dot in angles_and_dots])
 
 def normalized(vec):
-    return vec / np.sqrt(vec.dot(vec))
+    val = vec.dot(vec)
+    if val == 0:
+        return 0
+    return vec / np.sqrt(val)
 
 class BoardPath:
 
@@ -36,6 +39,8 @@ class BoardPath:
         self.dots = checkpoints
         self.current_checkpoint_index = 0
         self._last_car_position = None
+        self.car_position = self._last_car_position
+        self.car_direction = [0., 0.]
         self.car_size = 100 #hardcoded for debugging
 
     def _forward_checkpoint(self):
@@ -64,7 +69,9 @@ class BoardPath:
         if self._last_car_position is None:
             self._last_car_position = self.car_position
         direction = self.car_position - self._last_car_position
-        self.car_direction = normalized(direction)
+        vector = normalized(direction)
+        if np.any(vector):
+            self.car_direction = vector
         self._last_car_position = self.car_position
         self._update()
 
@@ -113,7 +120,7 @@ class BoardPath:
             [526, 342],
             [500, 222],
             [412, 130],
-            [318, 102], 
+            [318, 102],
             [164, 145],
             [112, 224],
             [88 , 332],

@@ -16,7 +16,7 @@ import cv2
 
 from image_processing.ros_image import RosImage
 
-from board_path import BoardPath, _BOARD_CENTER1, _BOARD_CENTER2
+from BoardPath import BoardPath, _BOARD_CENTER1, _BOARD_CENTER2
 
 class GazeboEnv(Env, GazeboMixin):
     # TODO It should not be hardcoded
