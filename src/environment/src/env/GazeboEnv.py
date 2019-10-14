@@ -12,6 +12,7 @@ from env.GazeboMixin import GazeboMixin
 import rospy
 
 import os
+import cv2
 
 from image_processing.ros_image import RosImage
 
@@ -37,6 +38,10 @@ class GazeboEnv(Env, GazeboMixin):
         metadata = {'render.modes': ['human', 'rgb_array']}
         self.cwd = os.path.abspath(os.path.dirname(__file__))
 
+        self.position_window_name = "ghost's position"
+        self.center_image_window_name = "ghost's view"
+        self.init_renderers()
+
         self.action_space = spaces.Discrete(8)
         self.observation_space = spaces.Box(0, 255, [240, 320, 3]) #size of image retrieved from center camera
         self.dump_board_image = True
@@ -51,6 +56,11 @@ class GazeboEnv(Env, GazeboMixin):
 
         self.board_path = BoardPath()
         self.reset()
+
+    def init_renderers(self):
+        flags = 2
+        cv2.namedWindow(self.center_image_window_name, flags)
+        cv2.namedWindow(self.position_window_name, flags)
 
     def center_image_callback(self, raw_image):
         pass
@@ -68,10 +78,15 @@ class GazeboEnv(Env, GazeboMixin):
         self._ros_sleep()
 
         observation = self._get_observation()
+
+        if RosImage.is_image_valid(self.center_image.image):
+            cv2.imshow(self.center_image_window_name, self.center_image.image)
+
         reward = self._calculate_reward()
 
         done = 1 / reward > 150  # distance greater than 150 units  # TODO
 
+        cv2.waitKey(1)
         return observation, reward, done, info
 
     def reset(self):
@@ -187,6 +202,7 @@ class GazeboEnv(Env, GazeboMixin):
             img[r - distance:r + distance, c - distance:c + distance] = 100
         # for i,(r,c) in enumerate(self.board_path.dots):
         #     img[r - distance:r + distance, c - distance:c + distance] = max(0, 255 - int(i * 255 / len(self.board_path.dots)))
+        cv2.imshow(self.position_window_name, img)
         img = toimage(img)
 
         img_dir = os.path.join(self.cwd, 'data')
