@@ -51,11 +51,15 @@ class GazeboEnv(Env, GazeboMixin):
         self.board = self._load_board()
         self.white_indices = np.argwhere(self.board == 255)
 
+        self.current_car_position = (0, 0)
+
         # add center camera image
         self.center_image = RosImage(GazeboEnv.CENTER_CAMERA_TOPIC)
 
         self.board_path = BoardPath()
         self.reset()
+
+        self.observation = None
 
     def init_renderers(self):
         self.renderers_initialized = True
@@ -78,14 +82,14 @@ class GazeboEnv(Env, GazeboMixin):
         self._publish_gazebo(message)
         self._ros_sleep()
 
-        observation = self._get_observation()
+        self.observation = self._get_observation()
 
         reward = self._calculate_reward()
 
         done = 1 / reward > 150  # distance greater than 150 units  # TODO
 
 
-        return observation, reward, done, info
+        return self.observation, reward, done, info
 
     def reset(self):
         self._reset_gazebo()
@@ -102,8 +106,14 @@ class GazeboEnv(Env, GazeboMixin):
                 self.init_renderers()
             if RosImage.is_image_valid(self.center_image.image):
                 cv2.imshow(self.center_image_window_name, self.center_image.image)
-            if RosImage.is_image_valid(self.current_position):
-                cv2.imshow(self.position_window_name, self.current_position)
+            if RosImage.is_image_valid(self.current_board):
+                rospy.loginfo('drawing position')
+                cv2.imshow(self.position_window_name, self.current_board)
+                if self.board_path.car_direction is not None:
+                    cv2.arrowedLine(self.current_position,
+                        self.current_car_position,
+                        (self.current_car_position[0] + int(self.board_path.car_direction[1]*50), self.current_car_position[1] + int(self.board_path.car_direction[0]*50)),
+                        127, 2)
             cv2.waitKey(1)
             return None
         else:
@@ -125,7 +135,7 @@ class GazeboEnv(Env, GazeboMixin):
         relative_car_y = int(relative_car_y)
         point, distance = self._get_closest_point_on_board(relative_car_x, relative_car_y)
         self._print_car_position_on_board(relative_car_x, relative_car_y, point)
-
+        self.current_car_position = (relative_car_y, relative_car_x)
         # TODO more sophisticated reward function (?)
         reward = 1 / (distance + 0.001)
 
@@ -209,7 +219,7 @@ class GazeboEnv(Env, GazeboMixin):
         # for i,(r,c) in enumerate(self.board_path.dots):
         #     img[r - distance:r + distance, c - distance:c + distance] = max(0, 255 - int(i * 255 / len(self.board_path.dots)))
 
-        self.current_position = img.copy()
+        self.current_board = img.copy()
         img = toimage(img)
 
         img_dir = os.path.join(self.cwd, 'data')
