@@ -65,7 +65,7 @@ class BoardPath:
             self._forward_checkpoint()
 
     def update(self, relative_car_x, relative_car_y):
-        self.car_position = np.array([relative_car_x, relative_car_y])
+        self.car_position = np.array([relative_car_y, relative_car_x])
         if self._last_car_position is None:
             self._last_car_position = self.car_position
         direction = self.car_position - self._last_car_position
@@ -79,7 +79,7 @@ class BoardPath:
         dir_to_checkpoint = normalized(self.current_checkpoint - self.car_position)
         car_dir = self.car_direction
         dot = dir_to_checkpoint.dot(car_dir)
-        det = car_dir[0] * dir_to_checkpoint[1] - car_dir[1] * dir_to_checkpoint[0]
+        det = car_dir[1] * dir_to_checkpoint[1] - car_dir[0] * dir_to_checkpoint[0]
         angle = np.atan2(det, dot)  # atan2(y, x) or atan2(sin, cos)
         return angle
 
