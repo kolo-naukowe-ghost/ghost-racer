@@ -108,12 +108,12 @@ class GazeboEnv(Env, GazeboMixin):
                 cv2.imshow(self.center_image_window_name, self.center_image.image)
             if RosImage.is_image_valid(self.current_board):
                 rospy.loginfo('drawing position')
-                cv2.imshow(self.position_window_name, self.current_board)
                 if self.board_path.car_direction is not None:
-                    cv2.arrowedLine(self.current_position,
+                    cv2.arrowedLine(self.current_board,
                         self.current_car_position,
                         (self.current_car_position[0] + int(self.board_path.car_direction[1]*50), self.current_car_position[1] + int(self.board_path.car_direction[0]*50)),
                         127, 2)
+                cv2.imshow(self.position_window_name, self.current_board)
             cv2.waitKey(1)
             return None
         else:
