@@ -1,6 +1,7 @@
 from PIL import Image
 import numpy as np
 import os
+from math import sqrt
 import rospy
 
 _PATH_TO_IMAGE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "dotted_board.jpeg")
@@ -26,10 +27,42 @@ def sort_dots(dots, reverse = False):
     return np.array([dot for _, dot in angles_and_dots])
 
 def normalized(vec):
-    val = vec.dot(vec)
-    if val == 0:
-        return 0
-    return vec / np.sqrt(val)
+    return vec / np.linalg.norm(vec)
+
+def get_straight_from_points(first_point, second_point):
+    '''
+
+    :param first_point: (y, x)
+    :param second_point:  (y, x)
+    :return: a, b straight's coefficients
+    '''
+    # Ax + By + C = 0
+    delta_y, delta_x = second_point[0] - first_point[0], second_point[1] - first_point[1]
+    if np.isclose(delta_x, 0.0):
+        return 1, 0, first_point[1]
+
+    if np.isclose(delta_y, 0.0):
+        return 0, 1, first_point[0]
+
+    a = delta_y / delta_x
+    b = first_point[0] - a*first_point[1]
+    return a, b, 0
+
+
+def point_to_straight_distance(line, point):
+    '''
+
+    :param line: a tuple of 3 points (a, b, c)
+    :param point: a tuple of 2 points (y, x)
+    :return:
+        distance from a line to the point
+    '''
+    a, b, c = line
+    y, x = point
+    denominator = sqrt(a**2 + b**2)
+    if np.isclose(denominator, 0.0):
+        return 0.0
+    return np.abs(a * x + b * y + c) / denominator
 
 class BoardPath:
 
@@ -38,9 +71,9 @@ class BoardPath:
         checkpoints = self._order_checkpoints(checkpoints)
         self.dots = checkpoints
         self.current_checkpoint_index = 0
-        self._last_car_position = None
+        self._last_car_position = np.zeros((2, ))
         self.car_position = self._last_car_position
-        self.car_direction = [0., 0.]
+        self.car_direction = np.zeros((2, ))
         self.car_size = 100 #hardcoded for debugging
 
     def _forward_checkpoint(self):
@@ -78,9 +111,13 @@ class BoardPath:
     def angle_to_next_checkpoint(self):
         dir_to_checkpoint = normalized(self.current_checkpoint - self.car_position)
         car_dir = self.car_direction
-        dot = dir_to_checkpoint.dot(car_dir)
+        dot = np.dot(dir_to_checkpoint, car_dir)
+        angle2 = np.arccos(dot / (np.linalg.norm(dir_to_checkpoint) * np.linalg.norm(car_dir)))
         det = car_dir[1] * dir_to_checkpoint[1] - car_dir[0] * dir_to_checkpoint[0]
-        angle = np.atan2(det, dot)  # atan2(y, x) or atan2(sin, cos)
+        angle = np.arctan2(det, dot)  # atan2(y, x) or atan2(sin, cos)
+        angle_rad = np.deg2rad(angle)
+        angle2_rad = np.deg2rad(angle2)
+        rospy.loginfo('angle is {}, angle 2 {}, cos {}, cos2 {}'.format(angle, angle2, np.cos(angle_rad), np.cos(angle2_rad)))
         return angle
 
 
@@ -89,15 +126,18 @@ class BoardPath:
         return np.sqrt(v.dot(v))
 
     def distance_to_road(self):
-        v = self.current_checkpoint - self.last_checkpoint
-        if np.isclose(v[0], 0.0):
+        a, b, c = get_straight_from_points(self.current_checkpoint, self.last_checkpoint)
+
+        if np.isclose(a, 0.0): # parallel to OX
+            rospy.loginfo('distance is {}'.format(abs(self.current_checkpoint[1] - self.car_position[1])))
+            return abs(self.current_checkpoint[1] - self.car_position[1])
+        if np.isclose(b, 0.0): # parallel to OY
+            rospy.loginfo('distance is {}'.format(abs(self.current_checkpoint[0] - self.car_position[0])))
             return abs(self.current_checkpoint[0] - self.car_position[0])
-        a = v[1] / v[0]
-        b = self.current_checkpoint[1] - a * self.current_checkpoint[0]
-        #aX - y + b = 0
-        nominator = abs(a * self.car_position[0] - 1 + b)
-        denominator = np.sqrt(a**2 + 1)
-        return nominator / denominator
+
+        tmp = point_to_straight_distance((a, b, c), self.car_position)
+        rospy.loginfo('distance is {}'.format(tmp))
+        return tmp
 
     def _order_checkpoints(self, checkpoints):
         # TODO
@@ -116,6 +156,7 @@ class BoardPath:
     def _load_board(self):
         # TODO
         # load from file
+        # y, x
         checkpoints = np.array([
             [526, 342],
             [500, 222],
