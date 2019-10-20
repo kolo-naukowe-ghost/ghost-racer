@@ -63,6 +63,17 @@ def point_to_straight_distance(line, point):
         return 0.0
     return np.abs(a * x + b * y + c) / denominator
 
+
+def angle_between_to_straight(straight1, straight2):
+    """
+    :param straight1: (a, b, c)
+    :param straight2: (a, b, c)
+    :return: angle between two straight lines in degrees
+    """
+
+    return np.arctan((straight2[0] - straight1[0]) / (1 + straight1[0] * straight2[0]))
+
+
 class BoardPath:
 
     def __init__(self):
