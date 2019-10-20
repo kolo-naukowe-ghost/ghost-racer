@@ -85,6 +85,7 @@ class BoardPath:
         self.car_position = self._last_car_position
         self.car_direction = np.zeros((2, ))
         self.car_size = 100 #hardcoded for debugging
+        self.current_road_straight_line = get_straight_from_points(self.current_checkpoint, self.next_checkpoint)
 
     def _forward_checkpoint(self):
         self.current_checkpoint_index = (self.current_checkpoint_index + 1) % len(self.dots)
@@ -100,6 +101,10 @@ class BoardPath:
     @property
     def last_checkpoint(self):
         return self.dots[self.current_checkpoint_index - 1]
+
+    @property
+    def angle_to_road(self):
+        return angle_between_to_straight(self.current_road_straight_line, get_straight_from_points(self.current_checkpoint, self.car_position))
 
     def _update(self):
         v = self.current_checkpoint - self.car_position
