@@ -66,6 +66,7 @@ class GazeboEnv(Env, GazeboMixin):
         flags = 2
         cv2.namedWindow(self.center_image_window_name, flags)
         cv2.namedWindow(self.position_window_name, flags)
+        cv2.resizeWindow(self.position_window_name, 500, 1000)
 
     def center_image_callback(self, raw_image):
         pass
