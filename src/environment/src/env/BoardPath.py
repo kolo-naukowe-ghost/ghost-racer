@@ -29,13 +29,13 @@ def sort_dots(dots, reverse = False):
 def normalized(vec):
     return vec / np.linalg.norm(vec)
 
-def get_straight_from_points(first_point, second_point):
-    '''
 
+def get_straight_from_points(first_point, second_point):
+    """
     :param first_point: (y, x)
     :param second_point:  (y, x)
     :return: a, b straight's coefficients
-    '''
+    """
     # Ax + By + C = 0
     delta_y, delta_x = second_point[0] - first_point[0], second_point[1] - first_point[1]
     if np.isclose(delta_x, 0.0):
@@ -50,13 +50,12 @@ def get_straight_from_points(first_point, second_point):
 
 
 def point_to_straight_distance(line, point):
-    '''
-
+    """
     :param line: a tuple of 3 points (a, b, c)
     :param point: a tuple of 2 points (y, x)
     :return:
         distance from a line to the point
-    '''
+    """
     a, b, c = line
     y, x = point
     denominator = sqrt(a**2 + b**2)
