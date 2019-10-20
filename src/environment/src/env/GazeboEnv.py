@@ -108,7 +108,6 @@ class GazeboEnv(Env, GazeboMixin):
             if RosImage.is_image_valid(self.center_image.image):
                 cv2.imshow(self.center_image_window_name, self.center_image.image)
             if RosImage.is_image_valid(self.current_board):
-                rospy.loginfo('drawing position')
                 self.board_path.angle_to_next_checkpoint()
                 if self.board_path.car_direction is not None:
                     cv2.arrowedLine(self.current_board,
