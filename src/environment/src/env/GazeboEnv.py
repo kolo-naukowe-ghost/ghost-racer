@@ -1,10 +1,7 @@
-from PIL import Image
 from geometry_msgs.msg import Twist
 from gym import spaces
-from scipy.misc import toimage
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from env.Env import Env
 from env.GazeboMixin import GazeboMixin
@@ -17,6 +14,7 @@ import cv2
 from image_processing.ros_image import RosImage
 
 from BoardPath import BoardPath
+
 
 class GazeboEnv(Env, GazeboMixin):
     # TODO It should not be hardcoded
@@ -45,10 +43,11 @@ class GazeboEnv(Env, GazeboMixin):
         self.renderers_initialized = False
 
         self.action_space = spaces.Discrete(8)
-        self.observation_space = spaces.Box(0, 255, [240, 320, 3]) #size of image retrieved from center camera
+        self.observation_space = spaces.Box(0, 255, [240, 320, 3])  # size of image retrieved from center camera
         self.dump_board_image = True
 
         self.board = self._load_board()
+        self.current_board = None
         self.white_indices = np.argwhere(self.board == 255)
 
         self.current_car_position = (0, 0)
@@ -103,11 +102,16 @@ class GazeboEnv(Env, GazeboMixin):
         if mode == 'rgb_array':
             return np.array(self.observation)
         elif mode == 'human':
+            self.current_board = self.board.copy()
+
             if not self.renderers_initialized:
                 self.init_renderers()
+
             if RosImage.is_image_valid(self.center_image.image):
                 cv2.imshow(self.center_image_window_name, self.center_image.image)
+
             if RosImage.is_image_valid(self.current_board):
+                self._print_car_position_on_board()
                 self.draw_cars_direction()
                 self.draw_waypoints()
                 cv2.imshow(self.position_window_name, self.current_board)
@@ -133,7 +137,6 @@ class GazeboEnv(Env, GazeboMixin):
         relative_car_y = int(relative_car_y)
 
         _, distance = self._get_closest_point_on_board(relative_car_x, relative_car_y)
-        self._print_car_position_on_board(relative_car_x, relative_car_y)
         self.current_car_position = (relative_car_y, relative_car_x)
         # TODO more sophisticated reward function (?)
         reward = 1 / (distance + 0.001)
@@ -184,7 +187,7 @@ class GazeboEnv(Env, GazeboMixin):
 
     def _get_car_position(self):
         model_state = self._get_model_state('conde')
-        position = (0,0)
+        position = (0, 0)
         if model_state is not None:
             position = (model_state.pose.position.x, model_state.pose.position.y)
         return position
@@ -200,20 +203,17 @@ class GazeboEnv(Env, GazeboMixin):
         if not os.path.exists(board_location):
             rospy.logerr('Path with image {} , doesn\'t exist.'.format(board_location))
             return None
-        board_image = Image.open(board_location).convert('L')
+        board = cv2.imread(board_location, cv2.IMREAD_GRAYSCALE)
         width, height = int(self.BOARD_WIDTH * 100), int(self.BOARD_HEIGHT * 100)
-        board_image = board_image.resize((width, height), Image.ANTIALIAS)
-        board_image = board_image.point(lambda p: p > 50)
-        image_array = np.array(board_image) * 255
-        return image_array
+        board = cv2.resize(board, (width, height))
+        board[board < 50] = 0
+        board[board >= 50] = 255
+        return board
 
-    def _print_car_position_on_board(self, car_x, car_y):
+    def _print_car_position_on_board(self):
         distance = 15
-        img = self.board.copy()
-        img[car_x - distance:car_x + distance, car_y - distance:car_y + distance] = 255
-
-        self.current_board = img.copy()
-        img = toimage(img)
+        self.current_board[self.current_car_position[1] - distance:self.current_car_position[1] + distance,
+            self.current_car_position[0] - distance:self.current_car_position[0] + distance] = 255
 
     def draw_waypoints(self):
         # draw checkpoints
@@ -229,4 +229,3 @@ class GazeboEnv(Env, GazeboMixin):
                             (self.current_car_position[0] + int(self.board_path.car_direction[1] * 50),
                              self.current_car_position[1] + int(self.board_path.car_direction[0] * 50)),
                             127, 2)
-
