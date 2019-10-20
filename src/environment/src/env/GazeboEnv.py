@@ -108,12 +108,8 @@ class GazeboEnv(Env, GazeboMixin):
             if RosImage.is_image_valid(self.center_image.image):
                 cv2.imshow(self.center_image_window_name, self.center_image.image)
             if RosImage.is_image_valid(self.current_board):
-                self.board_path.angle_to_next_checkpoint()
-                if self.board_path.car_direction is not None:
-                    cv2.arrowedLine(self.current_board,
-                        self.current_car_position,
-                        (self.current_car_position[0] + int(self.board_path.car_direction[1]*50), self.current_car_position[1] + int(self.board_path.car_direction[0]*50)),
-                        127, 2)
+                self.draw_cars_direction()
+                self.draw_waypoints()
                 cv2.imshow(self.position_window_name, self.current_board)
             cv2.waitKey(1)
             return None
@@ -132,10 +128,12 @@ class GazeboEnv(Env, GazeboMixin):
         relative_car_x = (self.BOARD_HEIGHT / 2 - car_y) * 100
         relative_car_y = (car_x + self.BOARD_WIDTH / 2) * 100
         self.board_path.update(relative_car_x, relative_car_y)
+
         relative_car_x = int(relative_car_x)
         relative_car_y = int(relative_car_y)
-        point, distance = self._get_closest_point_on_board(relative_car_x, relative_car_y)
-        self._print_car_position_on_board(relative_car_x, relative_car_y, point)
+
+        _, distance = self._get_closest_point_on_board(relative_car_x, relative_car_y)
+        self._print_car_position_on_board(relative_car_x, relative_car_y)
         self.current_car_position = (relative_car_y, relative_car_x)
         # TODO more sophisticated reward function (?)
         reward = 1 / (distance + 0.001)
@@ -209,21 +207,26 @@ class GazeboEnv(Env, GazeboMixin):
         image_array = np.array(board_image) * 255
         return image_array
 
-    def _print_car_position_on_board(self, car_x, car_y, closest_point):
-        pnt_r, pnt_c = closest_point
+    def _print_car_position_on_board(self, car_x, car_y):
         distance = 15
         img = self.board.copy()
         img[car_x - distance:car_x + distance, car_y - distance:car_y + distance] = 255
-        # img[pnt_r - distance:pnt_r + distance, pnt_c - distance:pnt_c + distance] = 255
-        for r,c in [_BOARD_CENTER1, _BOARD_CENTER2]:
-            img[r - distance:r + distance, c - distance:c + distance] = 100
-        # for i,(r,c) in enumerate(self.board_path.dots):
-        #     img[r - distance:r + distance, c - distance:c + distance] = max(0, 255 - int(i * 255 / len(self.board_path.dots)))
 
         self.current_board = img.copy()
         img = toimage(img)
 
-        img_dir = os.path.join(self.cwd, 'data')
-        if self.dump_board_image and os.path.exists(img_dir):
-            img.save(os.path.join(img_dir, "car_and_closest_point.jpeg"))
+    def draw_waypoints(self):
+        # draw checkpoints
+        if self.board_path.current_checkpoint is not None and self.board_path.next_checkpoint is not None:
+            cv2.circle(self.current_board, tuple(self.board_path.current_checkpoint[::-1]), 25, 127, -1)
+            cv2.circle(self.current_board, tuple(self.board_path.next_checkpoint[::-1]), 20, 200, -1)
+
+    def draw_cars_direction(self):
+        # draw direction
+        if self.board_path.car_direction is not None:
+            cv2.arrowedLine(self.current_board,
+                            self.current_car_position,
+                            (self.current_car_position[0] + int(self.board_path.car_direction[1] * 50),
+                             self.current_car_position[1] + int(self.board_path.car_direction[0] * 50)),
+                            127, 2)
 
