@@ -13,7 +13,7 @@ import cv2
 
 from image_processing.ros_image import RosImage
 
-from BoardPath import BoardPath
+from BoardPath import BoardPath, get_two_straight_lines_intersection
 
 
 class GazeboEnv(Env, GazeboMixin):
@@ -114,6 +114,7 @@ class GazeboEnv(Env, GazeboMixin):
                 self._print_car_position_on_board()
                 self.draw_cars_direction()
                 self.draw_waypoints()
+                self.draw_angle_between_car_and_road()
                 cv2.imshow(self.position_window_name, self.current_board)
             cv2.waitKey(1)
             return None
@@ -226,6 +227,27 @@ class GazeboEnv(Env, GazeboMixin):
         if self.board_path.car_direction is not None:
             cv2.arrowedLine(self.current_board,
                             self.current_car_position,
-                            (self.current_car_position[0] + int(self.board_path.car_direction[1] * 50),
-                             self.current_car_position[1] + int(self.board_path.car_direction[0] * 50)),
-                            127, 2)
+                            self.board_path.car_front_point, 127, 2)
+
+    def draw_angle_between_car_and_road(self):
+        if self.board_path.car_direction is not None:
+
+            draw_temp_lines = True
+            a = self.board_path.car_direction_straight
+            b = self.board_path.current_road_straight_line
+            y, x = get_two_straight_lines_intersection(b, a)
+            intersection_point = int(x), int(y)
+            car_position_point = int(self.board_path.car_position[1]), int(self.board_path.car_position[0])
+            car_front_position_point = self.board_path.car_front_point[1], self.board_path.car_front_point[0]
+            current_checkpoint_point = tuple(self.board_path.current_checkpoint[::-1])
+            next_checkpoint_point = tuple(self.board_path.next_checkpoint[::-1])
+
+            if intersection_point is not None:
+                if draw_temp_lines:
+                    cv2.circle(self.current_board, intersection_point, 10, 127)
+                    rospy.loginfo("point is {}".format((y, x)))
+                    cv2.line(self.current_board, car_position_point, car_front_position_point, 255, 4)
+                    cv2.line(self.current_board, current_checkpoint_point, next_checkpoint_point, 255, 4)
+
+                cv2.line(self.current_board, next_checkpoint_point, intersection_point, 255, 4)
+                cv2.line(self.current_board, (int(self.board_path.car_position[0]), int(self.board_path.car_position[1])), intersection_point, 127, 4)

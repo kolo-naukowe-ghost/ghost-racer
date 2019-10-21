@@ -47,9 +47,12 @@ def get_straight_from_points(first_point, second_point):
     if np.isclose(delta_y, 0.0):
         return 0, 1, first_point[0]
 
-    a = delta_y / delta_x
-    b = first_point[0] - a * first_point[1]
-    return a, b, 0
+    a = np.array([[first_point[1], 1], [second_point[1], 1]])
+    b = np.array([first_point[0], second_point[0]])
+    straight = np.linalg.solve(a, b)
+
+    # ax + by + c = 0 -> b=-1, ax + c = y
+    return straight[0], -1, straight[1]
 
 
 def point_to_straight_distance(line, point):
@@ -67,14 +70,28 @@ def point_to_straight_distance(line, point):
     return np.abs(a * x + b * y + c) / denominator
 
 
-def angle_between_to_straight(straight1, straight2):
+def angle_between_two_straight(straight1, straight2):
     """
     :param straight1: (a, b, c)
     :param straight2: (a, b, c)
     :return: angle between two straight lines in degrees
     """
 
-    return np.arctan((straight2[0] - straight1[0]) / (1 + straight1[0] * straight2[0]))
+    return np.rad2deg(np.arctan((straight2[0] - straight1[0]) / (1 + straight1[0] * straight2[0])))
+
+
+def get_two_straight_lines_intersection(straight1, straight2):
+    """
+    :param straight1: (a, b, c)
+    :param straight2: (a, b, c)
+    :return: point (y, x) that represents an intersection between straight1 and straight2
+    """
+    a = np.array([[straight1[0], straight1[1]], [straight2[0], straight2[1]]])
+    b = np.array([-straight1[2], -straight2[2]])
+
+    point = np.linalg.solve(a, b)
+
+    return point[1], point[0]  # y, x
 
 
 class BoardPath:
@@ -92,6 +109,7 @@ class BoardPath:
 
     def _forward_checkpoint(self):
         self.current_checkpoint_index = (self.current_checkpoint_index + 1) % len(self.dots)
+        self.current_road_straight_line = get_straight_from_points(self.current_checkpoint, self.next_checkpoint)
 
     @property
     def next_checkpoint(self):
@@ -106,8 +124,16 @@ class BoardPath:
         return self.dots[self.current_checkpoint_index - 1]
 
     @property
+    def car_direction_straight(self):
+        return get_straight_from_points(self.car_position, self.car_front_point)
+
+    @property
+    def car_front_point(self):
+        return int(self.car_position[0] + 10 * self.car_direction[0]), int(self.car_position[1] + 10 * self.car_direction[1])
+
+    @property
     def angle_to_road(self):
-        return angle_between_to_straight(self.current_road_straight_line, get_straight_from_points(self.current_checkpoint, self.car_position))
+        return angle_between_two_straight(self.current_road_straight_line, self.car_direction_straight)
 
     def _update(self):
         v = self.current_checkpoint - self.car_position
@@ -137,7 +163,6 @@ class BoardPath:
         angle2_rad = np.deg2rad(angle2)
         rospy.loginfo('angle is {}, angle 2 {}, cos {}, cos2 {}'.format(angle, angle2, np.cos(angle_rad), np.cos(angle2_rad)))
         return angle
-
 
     def distance_to_next_checkpoint(self):
         v = self.current_checkpoint - self.car_position
