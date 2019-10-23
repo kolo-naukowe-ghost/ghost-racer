@@ -78,21 +78,14 @@ class BoardPath:
         vector = normalized(direction)
         if np.any(vector):
             self.car_direction = vector
-        self.angle_to_next_checkpoint()
-        rospy.loginfo('angle between car and straight {}'.format(self.angle_to_road))
         self._last_car_position = self.car_position
         self._update()
 
     def angle_to_next_checkpoint(self):
         dir_to_checkpoint = normalized(self.current_checkpoint - self.car_position)
-        car_dir = self.car_direction
-        dot = np.dot(dir_to_checkpoint, car_dir)
-        angle2 = np.arccos(dot / (np.linalg.norm(dir_to_checkpoint) * np.linalg.norm(car_dir)))
-        det = car_dir[0] * dir_to_checkpoint[0] - car_dir[1] * dir_to_checkpoint[1]
+        dot = np.dot(dir_to_checkpoint, self.car_direction)
+        det = self.car_direction[0] * dir_to_checkpoint[0] - self.car_direction[1] * dir_to_checkpoint[1]
         angle = np.arctan2(det, dot)  # atan2(y, x) or atan2(sin, cos)
-        rospy.loginfo(
-            'angle is {}, angle 2 {}, cos {}, cos2 {}'.format(np.rad2deg(angle), np.rad2deg(angle2), np.cos(angle),
-                                                              np.cos(angle2)))
         return angle
 
     def distance_to_next_checkpoint(self):
@@ -103,10 +96,8 @@ class BoardPath:
         a, b, c = get_straight_from_points(self.current_checkpoint, self.last_checkpoint)
 
         if a == 0:  # parallel to OY
-            # rospy.loginfo('distance is {}'.format(abs(self.current_checkpoint[0] - self.car_position[0])))
             return abs(self.current_checkpoint[0] - self.car_position[0])
         if b == 0:  # parallel to OX
-            # rospy.loginfo('distance is {}'.format(abs(self.current_checkpoint[1] - self.car_position[1])))
             return abs(self.current_checkpoint[1] - self.car_position[1])
 
         tmp = point_to_straight_distance((a, b, c), self.car_position)
