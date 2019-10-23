@@ -15,6 +15,11 @@ from image_processing.ros_image import RosImage
 
 from BoardPath import BoardPath, get_two_straight_lines_intersection
 
+color_1 = (73, 73, 73)
+color_2 = (74, 175, 142)
+color_3 = (158, 148, 99)
+color_4 = (70, 83, 182)
+color_5 = (129, 19, 245)
 
 class GazeboEnv(Env, GazeboMixin):
     # TODO It should not be hardcoded
@@ -50,7 +55,7 @@ class GazeboEnv(Env, GazeboMixin):
         self.current_board = None
         self.white_indices = np.argwhere(self.board == 255)
 
-        self.current_car_position = (0, 0)
+        self.current_car_position = np.zeros((2, ))
 
         # add center camera image
         self.center_image = RosImage(GazeboEnv.CENTER_CAMERA_TOPIC)
@@ -130,15 +135,15 @@ class GazeboEnv(Env, GazeboMixin):
 
     def _calculate_reward(self):
         car_x, car_y = self._get_car_position()
-        relative_car_x = (self.BOARD_HEIGHT / 2 - car_y) * 100
-        relative_car_y = (car_x + self.BOARD_WIDTH / 2) * 100
+        relative_car_y = (self.BOARD_HEIGHT / 2 - car_y) * 100
+        relative_car_x = (car_x + self.BOARD_WIDTH / 2) * 100
         self.board_path.update(relative_car_x, relative_car_y)
 
         relative_car_x = int(relative_car_x)
         relative_car_y = int(relative_car_y)
 
         _, distance = self._get_closest_point_on_board(relative_car_x, relative_car_y)
-        self.current_car_position = (relative_car_y, relative_car_x)
+        self.current_car_position = np.array([relative_car_x, relative_car_y])
         # TODO more sophisticated reward function (?)
         reward = 1 / (distance + 0.001)
 
@@ -204,7 +209,7 @@ class GazeboEnv(Env, GazeboMixin):
         if not os.path.exists(board_location):
             rospy.logerr('Path with image {} , doesn\'t exist.'.format(board_location))
             return None
-        board = cv2.imread(board_location, cv2.IMREAD_GRAYSCALE)
+        board = cv2.imread(board_location, cv2.IMREAD_COLOR)
         width, height = int(self.BOARD_WIDTH * 100), int(self.BOARD_HEIGHT * 100)
         board = cv2.resize(board, (width, height))
         board[board < 50] = 0
@@ -213,34 +218,33 @@ class GazeboEnv(Env, GazeboMixin):
 
     def _print_car_position_on_board(self):
         distance = 15
-        self.current_board[self.current_car_position[1] - distance:self.current_car_position[1] + distance,
-            self.current_car_position[0] - distance:self.current_car_position[0] + distance] = 255
+        cv2.rectangle(self.current_board, tuple(self.current_car_position - 10), tuple(self.current_car_position + 10), color_1, -1)
 
     def draw_waypoints(self):
         # draw checkpoints
         if self.board_path.current_checkpoint is not None and self.board_path.next_checkpoint is not None:
-            cv2.circle(self.current_board, tuple(self.board_path.current_checkpoint[::-1]), 25, 127, -1)
-            cv2.circle(self.current_board, tuple(self.board_path.next_checkpoint[::-1]), 20, 200, -1)
+            cv2.circle(self.current_board, tuple(self.board_path.current_checkpoint), 25, color_2, -1)
+            cv2.circle(self.current_board, tuple(self.board_path.next_checkpoint), 20, color_3, -1)
 
     def draw_cars_direction(self):
         # draw direction
         if self.board_path.car_direction is not None:
             cv2.arrowedLine(self.current_board,
-                            self.current_car_position,
-                            self.board_path.car_front_point, 127, 2)
+                            tuple(self.current_car_position),
+                            self.board_path.car_front_point, color_4, 5)
 
     def draw_angle_between_car_and_road(self):
         if self.board_path.car_direction is not None:
 
-            draw_temp_lines = True
+            draw_temp_lines = False
             a = self.board_path.car_direction_straight
             b = self.board_path.current_road_straight_line
-            y, x = get_two_straight_lines_intersection(b, a)
+            x, y = get_two_straight_lines_intersection(b, a)
             intersection_point = int(x), int(y)
-            car_position_point = int(self.board_path.car_position[1]), int(self.board_path.car_position[0])
-            car_front_position_point = self.board_path.car_front_point[1], self.board_path.car_front_point[0]
-            current_checkpoint_point = tuple(self.board_path.current_checkpoint[::-1])
-            next_checkpoint_point = tuple(self.board_path.next_checkpoint[::-1])
+            car_position_point = int(self.board_path.car_position[0]), int(self.board_path.car_position[1])
+            car_front_position_point = self.board_path.car_front_point
+            current_checkpoint_point = tuple(self.board_path.current_checkpoint)
+            next_checkpoint_point = tuple(self.board_path.next_checkpoint)
 
             if intersection_point is not None:
                 if draw_temp_lines:
@@ -249,5 +253,5 @@ class GazeboEnv(Env, GazeboMixin):
                     cv2.line(self.current_board, car_position_point, car_front_position_point, 255, 4)
                     cv2.line(self.current_board, current_checkpoint_point, next_checkpoint_point, 255, 4)
 
-                cv2.line(self.current_board, next_checkpoint_point, intersection_point, 255, 4)
-                cv2.line(self.current_board, (int(self.board_path.car_position[0]), int(self.board_path.car_position[1])), intersection_point, 127, 4)
+                cv2.line(self.current_board, next_checkpoint_point, intersection_point, color_1, 4)
+                cv2.line(self.current_board, car_position_point, intersection_point, color_2, 4)

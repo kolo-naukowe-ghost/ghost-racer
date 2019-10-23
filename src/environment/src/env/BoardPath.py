@@ -35,20 +35,20 @@ def normalized(vec):
 
 def get_straight_from_points(first_point, second_point):
     """
-    :param first_point: (y, x)
-    :param second_point:  (y, x)
+    :param first_point: (x, y)
+    :param second_point:  (x, y)
     :return: a, b straight's coefficients
     """
     # Ax + By + C = 0
-    delta_y, delta_x = second_point[0] - first_point[0], second_point[1] - first_point[1]
+    delta_y, delta_x = second_point[1] - first_point[1], second_point[0] - first_point[0]
     if np.isclose(delta_x, 0.0):
-        return 1, 0, first_point[1]
+        return 1, 0, -first_point[1]
 
     if np.isclose(delta_y, 0.0):
-        return 0, 1, first_point[0]
+        return 0, 1, -first_point[0]
 
-    a = np.array([[first_point[1], 1], [second_point[1], 1]])
-    b = np.array([first_point[0], second_point[0]])
+    a = np.array([[first_point[0], 1], [second_point[0], 1]])
+    b = np.array([first_point[1], second_point[1]])
     straight = np.linalg.solve(a, b)
 
     # ax + by + c = 0 -> b=-1, ax + c = y
@@ -58,12 +58,12 @@ def get_straight_from_points(first_point, second_point):
 def point_to_straight_distance(line, point):
     """
     :param line: a tuple of 3 points (a, b, c)
-    :param point: a tuple of 2 points (y, x)
+    :param point: a tuple of 2 points (x, y)
     :return:
         distance from a line to the point
     """
     a, b, c = line
-    y, x = point
+    x, y = point
     denominator = sqrt(a ** 2 + b ** 2)
     if np.isclose(denominator, 0.0):
         return 0.0
@@ -80,18 +80,22 @@ def angle_between_two_straight(straight1, straight2):
     return np.rad2deg(np.arctan((straight2[0] - straight1[0]) / (1 + straight1[0] * straight2[0])))
 
 
+def angle_between_vectors(vec1, vec2):
+    return np.arccos(np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2)))
+
+
 def get_two_straight_lines_intersection(straight1, straight2):
     """
     :param straight1: (a, b, c)
     :param straight2: (a, b, c)
-    :return: point (y, x) that represents an intersection between straight1 and straight2
+    :return: point (x, y) that represents an intersection between straight1 and straight2
     """
     a = np.array([[straight1[0], straight1[1]], [straight2[0], straight2[1]]])
     b = np.array([-straight1[2], -straight2[2]])
 
     point = np.linalg.solve(a, b)
 
-    return point[1], point[0]  # y, x
+    return point  # x, y
 
 
 class BoardPath:
@@ -129,7 +133,7 @@ class BoardPath:
 
     @property
     def car_front_point(self):
-        return int(self.car_position[0] + 10 * self.car_direction[0]), int(self.car_position[1] + 10 * self.car_direction[1])
+        return int(self.car_position[0] + 50 * self.car_direction[0]), int(self.car_position[1] + 50 * self.car_direction[1])
 
     @property
     def angle_to_road(self):
@@ -142,13 +146,15 @@ class BoardPath:
             self._forward_checkpoint()
 
     def update(self, relative_car_x, relative_car_y):
-        self.car_position = np.array([relative_car_y, relative_car_x])
+        self.car_position = np.array([relative_car_x, relative_car_y])
         if self._last_car_position is None:
             self._last_car_position = self.car_position
         direction = self.car_position - self._last_car_position
         vector = normalized(direction)
         if np.any(vector):
             self.car_direction = vector
+        self.angle_to_next_checkpoint()
+        rospy.loginfo('angle between car and straight {}'.format(self.angle_to_road))
         self._last_car_position = self.car_position
         self._update()
 
@@ -157,11 +163,10 @@ class BoardPath:
         car_dir = self.car_direction
         dot = np.dot(dir_to_checkpoint, car_dir)
         angle2 = np.arccos(dot / (np.linalg.norm(dir_to_checkpoint) * np.linalg.norm(car_dir)))
-        det = car_dir[1] * dir_to_checkpoint[1] - car_dir[0] * dir_to_checkpoint[0]
+        det = car_dir[0] * dir_to_checkpoint[0] - car_dir[1] * dir_to_checkpoint[1]
         angle = np.arctan2(det, dot)  # atan2(y, x) or atan2(sin, cos)
-        angle_rad = np.deg2rad(angle)
-        angle2_rad = np.deg2rad(angle2)
-        rospy.loginfo('angle is {}, angle 2 {}, cos {}, cos2 {}'.format(angle, angle2, np.cos(angle_rad), np.cos(angle2_rad)))
+        rospy.loginfo(
+            'angle is {}, angle 2 {}, cos {}, cos2 {}'.format(np.rad2deg(angle), np.rad2deg(angle2), np.cos(angle), np.cos(angle2)))
         return angle
 
     def distance_to_next_checkpoint(self):
@@ -171,15 +176,14 @@ class BoardPath:
     def distance_to_road(self):
         a, b, c = get_straight_from_points(self.current_checkpoint, self.last_checkpoint)
 
-        if np.isclose(a, 0.0):  # parallel to OX
-            rospy.loginfo('distance is {}'.format(abs(self.current_checkpoint[1] - self.car_position[1])))
-            return abs(self.current_checkpoint[1] - self.car_position[1])
-        if np.isclose(b, 0.0):  # parallel to OY
-            rospy.loginfo('distance is {}'.format(abs(self.current_checkpoint[0] - self.car_position[0])))
+        if a == 0:  # parallel to OY
+            # rospy.loginfo('distance is {}'.format(abs(self.current_checkpoint[0] - self.car_position[0])))
             return abs(self.current_checkpoint[0] - self.car_position[0])
+        if b == 0:  # parallel to OX
+            # rospy.loginfo('distance is {}'.format(abs(self.current_checkpoint[1] - self.car_position[1])))
+            return abs(self.current_checkpoint[1] - self.car_position[1])
 
         tmp = point_to_straight_distance((a, b, c), self.car_position)
-        rospy.loginfo('distance is {}'.format(tmp))
         return tmp
 
     def _order_checkpoints(self, checkpoints):
@@ -234,5 +238,6 @@ class BoardPath:
             [526, 734],
             [526, 532],
         ])
-        checkpoints = [chp[::-1] for chp in checkpoints]
+        # change to x, y
+        # checkpoints = [chp[::-1] for chp in checkpoints]
         return checkpoints
