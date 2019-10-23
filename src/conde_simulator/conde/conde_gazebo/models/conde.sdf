@@ -110,7 +110,7 @@
 	<sensor name="camera_controller_top" type="camera">
 	  <visualize>0</visualize>
 	  <always_on>1</always_on>
-	  <pose>-0.079244135856401 0 0.562431407758936 0 -0.28 0</pose>
+	  <pose>-0.079244135856401 0 0.1 0 -0.28 0</pose>
 	  <camera name="chassiscameratop">
 		<horizontal_fov>1.5707963267949</horizontal_fov>
 		<image>
