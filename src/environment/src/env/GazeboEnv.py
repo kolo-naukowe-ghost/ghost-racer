@@ -13,7 +13,8 @@ import cv2
 
 from image_processing.ros_image import RosImage
 
-from BoardPath import BoardPath, get_two_straight_lines_intersection
+from BoardPath import BoardPath
+from utils.math_helpers import get_two_straight_lines_intersection
 
 color_1 = (73, 73, 73)
 color_2 = (74, 175, 142)
