@@ -18,18 +18,11 @@ fi
 
 echo "root directory of the ghost-racer: $ghost_racer_root_dir"
 
-if [ -z $DISPLAY ]; then
-    display=':0'
-    echo "Setting display to $display"
-else
-    display=${DISPLAY}
-fi
-
 docker run -it --rm \
-    -e DISPLAY=${display} \
+    -e "DISPLAY" \
     -e QT_X11_NO_MITSHM=1 \
-    -p 11311:11311 \
-    -v /tmp/.X11-unix/:/tmp/.X11-unix/ \
+    --network host \
+    -v /tmp/.X11-unix/:/tmp/.X11-unix/:rw \
     -v $ghost_racer_root_dir:$docker_ghost_racer_root_dir \
     --name "ghost-racer" \
     jakubtomczak/ghost-racer

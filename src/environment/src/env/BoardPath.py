@@ -1,22 +1,18 @@
-from PIL import Image
 import numpy as np
 import os
 import rospy
+from utils.math_helpers import _get_angle_between_vector_and_x_axis, get_straight_from_points, \
+    angle_between_two_straight, point_to_straight_distance, normalized
 
 _PATH_TO_IMAGE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "dotted_board.jpeg")
 
 # _BOARD_CENTER = np.array([1050, 2040]).T
 _BOARD_CENTER1 = np.array([500, 460][::-1])
-_BOARD_CENTER2 = np.array([500,1170][::-1])
+_BOARD_CENTER2 = np.array([500, 1170][::-1])
 _MIDDLE_BOARD_POINT = 840
 
-def _get_angle_between_vector_and_x_axis(vec):
-    angle = np.arctan2(vec[1], vec[0])
-    if angle < 0:
-        angle = 2 * np.pi + angle
-    return angle
 
-def sort_dots(dots, reverse = False):
+def sort_dots(dots, reverse=False):
     angles = [_get_angle_between_vector_and_x_axis(dot) for dot in dots]
     angles_and_dots = [(angle, dot) for angle, dot in zip(angles, dots)]
     print("sorting...")
@@ -25,8 +21,6 @@ def sort_dots(dots, reverse = False):
     print(angles_and_dots)
     return np.array([dot for _, dot in angles_and_dots])
 
-def normalized(vec):
-    return vec / np.sqrt(vec.dot(vec))
 
 class BoardPath:
 
@@ -35,11 +29,15 @@ class BoardPath:
         checkpoints = self._order_checkpoints(checkpoints)
         self.dots = checkpoints
         self.current_checkpoint_index = 0
-        self._last_car_position = None
-        self.car_size = 100 #hardcoded for debugging
+        self._last_car_position = np.zeros((2,))
+        self.car_position = self._last_car_position
+        self.car_direction = np.zeros((2,))
+        self.current_road_straight_line = get_straight_from_points(self.current_checkpoint, self.next_checkpoint)
+        self.car_size = 100  # hardcoded for debugging
 
     def _forward_checkpoint(self):
         self.current_checkpoint_index = (self.current_checkpoint_index + 1) % len(self.dots)
+        self.current_road_straight_line = get_straight_from_points(self.current_checkpoint, self.next_checkpoint)
 
     @property
     def next_checkpoint(self):
@@ -53,10 +51,23 @@ class BoardPath:
     def last_checkpoint(self):
         return self.dots[self.current_checkpoint_index - 1]
 
+    @property
+    def car_direction_straight(self):
+        return get_straight_from_points(self.car_position, self.car_front_point)
+
+    @property
+    def car_front_point(self):
+        return int(self.car_position[0] + 50 * self.car_direction[0]), int(
+            self.car_position[1] + 50 * self.car_direction[1])
+
+    @property
+    def angle_to_road(self):
+        return angle_between_two_straight(self.current_road_straight_line, self.car_direction_straight)
+
     def _update(self):
         v = self.current_checkpoint - self.car_position
         distance_squared = v.dot(v)
-        if distance_squared <= self.car_size**2:
+        if distance_squared <= self.car_size ** 2:
             self._forward_checkpoint()
 
     def update(self, relative_car_x, relative_car_y):
@@ -64,33 +75,33 @@ class BoardPath:
         if self._last_car_position is None:
             self._last_car_position = self.car_position
         direction = self.car_position - self._last_car_position
-        self.car_direction = normalized(direction)
+        vector = normalized(direction)
+        if np.any(vector):
+            self.car_direction = vector
         self._last_car_position = self.car_position
         self._update()
 
     def angle_to_next_checkpoint(self):
         dir_to_checkpoint = normalized(self.current_checkpoint - self.car_position)
-        car_dir = self.car_direction
-        dot = dir_to_checkpoint.dot(car_dir)
-        det = car_dir[0] * dir_to_checkpoint[1] - car_dir[1] * dir_to_checkpoint[0]
-        angle = np.atan2(det, dot)  # atan2(y, x) or atan2(sin, cos)
+        dot = np.dot(dir_to_checkpoint, self.car_direction)
+        det = self.car_direction[0] * dir_to_checkpoint[0] - self.car_direction[1] * dir_to_checkpoint[1]
+        angle = np.arctan2(det, dot)  # atan2(y, x) or atan2(sin, cos)
         return angle
-
 
     def distance_to_next_checkpoint(self):
         v = self.current_checkpoint - self.car_position
         return np.sqrt(v.dot(v))
 
     def distance_to_road(self):
-        v = self.current_checkpoint - self.last_checkpoint
-        if np.isclose(v[0], 0.0):
+        a, b, c = get_straight_from_points(self.current_checkpoint, self.last_checkpoint)
+
+        if a == 0:  # parallel to OY
             return abs(self.current_checkpoint[0] - self.car_position[0])
-        a = v[1] / v[0]
-        b = self.current_checkpoint[1] - a * self.current_checkpoint[0]
-        #aX - y + b = 0
-        nominator = abs(a * self.car_position[0] - 1 + b)
-        denominator = np.sqrt(a**2 + 1)
-        return nominator / denominator
+        if b == 0:  # parallel to OX
+            return abs(self.current_checkpoint[1] - self.car_position[1])
+
+        tmp = point_to_straight_distance((a, b, c), self.car_position)
+        return tmp
 
     def _order_checkpoints(self, checkpoints):
         # TODO
@@ -109,14 +120,15 @@ class BoardPath:
     def _load_board(self):
         # TODO
         # load from file
+        # y, x
         checkpoints = np.array([
             [526, 342],
             [500, 222],
             [412, 130],
-            [318, 102], 
+            [318, 102],
             [164, 145],
             [112, 224],
-            [88 , 332],
+            [88, 332],
             [118, 446],
             [194, 530],
             [318, 566],
@@ -128,8 +140,8 @@ class BoardPath:
             [248, 1122],
             [178, 1152],
             [114, 1224],
-            [88 , 1308],
-            [90 , 1392],
+            [88, 1308],
+            [90, 1392],
             [122, 1470],
             [182, 1534],
             [248, 1570],
@@ -143,5 +155,6 @@ class BoardPath:
             [526, 734],
             [526, 532],
         ])
-        checkpoints = [chp[::-1] for chp in checkpoints]
+        # change to x, y
+        # checkpoints = [chp[::-1] for chp in checkpoints]
         return checkpoints
