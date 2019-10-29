@@ -82,7 +82,7 @@ class GazeboEnv(Env, GazeboMixin):
         :param action: int
         :return: observation: State, reward: float, done: bool, info: dict
         """
-        info = dict()
+        self._info = dict()
         message = self._get_message_from_action(action)
 
         self._publish_gazebo(message)
@@ -92,14 +92,14 @@ class GazeboEnv(Env, GazeboMixin):
 
         reward = self._calculate_reward()
 
-        done = 1 / reward > 150  # distance greater than 150 units  # TODO
-
-
-        return self.observation, reward, done, info
+        #done = 1 / reward > 150  # distance greater than 150 units  # TODO
+        done = False
+        return self.observation, reward, done, self._info
 
     def reset(self):
         self._reset_gazebo()
         self._get_observation()
+        self.board_path = BoardPath()
         # TODO set state, and reward here
 
         return self._get_observation()
@@ -142,12 +142,19 @@ class GazeboEnv(Env, GazeboMixin):
 
         relative_car_x = int(relative_car_x)
         relative_car_y = int(relative_car_y)
+        self.current_car_position = np.array([relative_car_x, relative_car_y])
+
 
         _, distance = self._get_closest_point_on_board(relative_car_x, relative_car_y)
-        self.current_car_position = np.array([relative_car_x, relative_car_y])
+        self._info['distance_to_road'] = distance
+        self._info['distance_to_checkpoint'] = self.board_path.get_distance_to_next_checkpoint()
+        #print("Distance:", distance)
+        angle = self.board_path.get_angle_to_next_checkpoint()
+        self._info['angle'] = angle
+        velocity = self.board_path.car_velocity
         # TODO more sophisticated reward function (?)
-        reward = 1 / (distance + 0.001)
-
+        reward = (20 * velocity * np.cos(angle) - 0.001 * distance)
+        self._info['reward'] = reward
         return reward
 
     def _get_closest_point_on_board(self, relative_car_x, relative_car_y):
@@ -156,7 +163,7 @@ class GazeboEnv(Env, GazeboMixin):
         :param relative_car_x: int, relative_car_y: int
         :return: closest_point_index: np.array, distance: float
         """
-        return self.board_path.current_checkpoint, self.board_path.distance_to_road()
+        return self.board_path.current_checkpoint, self.board_path.get_distance_to_next_checkpoint()
 
     def _get_message_from_action(self, action):
         """
@@ -187,6 +194,8 @@ class GazeboEnv(Env, GazeboMixin):
         elif action == 7:  # BR
             twist.linear.x = -self.LINEAR_ACTION
             twist.angular.z = self.TWIST_ACTION
+        elif action == 8: # do nothing, used in manual control
+            pass
         else:
             raise ValueError
 

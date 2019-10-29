@@ -61,6 +61,13 @@ class BoardPath:
             self.car_position[1] + 50 * self.car_direction[1])
 
     @property
+    def car_velocity(self):
+        if self._car_vel is None:
+            return 0
+        else:
+            return np.sqrt(self._car_vel.dot(self._car_vel))
+
+    @property
     def angle_to_road(self):
         return angle_between_two_straight(self.current_road_straight_line, self.car_direction_straight)
 
@@ -71,28 +78,31 @@ class BoardPath:
             self._forward_checkpoint()
 
     def update(self, relative_car_x, relative_car_y):
+        car_position = np.array([relative_car_x, relative_car_y])
+        if np.allclose(self.car_position, car_position):
+            return #there is nothing to update
         self.car_position = np.array([relative_car_x, relative_car_y])
         if self._last_car_position is None:
             self._last_car_position = self.car_position
-        direction = self.car_position - self._last_car_position
-        vector = normalized(direction)
+        self._car_vel = self.car_position - self._last_car_position
+        vector = normalized(self._car_vel)
         if np.any(vector):
             self.car_direction = vector
         self._last_car_position = self.car_position
         self._update()
 
-    def angle_to_next_checkpoint(self):
+    def get_angle_to_next_checkpoint(self):
         dir_to_checkpoint = normalized(self.current_checkpoint - self.car_position)
         dot = np.dot(dir_to_checkpoint, self.car_direction)
         det = self.car_direction[0] * dir_to_checkpoint[0] - self.car_direction[1] * dir_to_checkpoint[1]
         angle = np.arctan2(det, dot)  # atan2(y, x) or atan2(sin, cos)
         return angle
 
-    def distance_to_next_checkpoint(self):
+    def get_distance_to_next_checkpoint(self):
         v = self.current_checkpoint - self.car_position
         return np.sqrt(v.dot(v))
 
-    def distance_to_road(self):
+    def get_distance_to_road(self):
         a, b, c = get_straight_from_points(self.current_checkpoint, self.last_checkpoint)
 
         if a == 0:  # parallel to OY
@@ -122,6 +132,7 @@ class BoardPath:
         # load from file
         # y, x
         checkpoints = np.array([
+            [526, 432],
             [526, 342],
             [500, 222],
             [412, 130],

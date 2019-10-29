@@ -59,3 +59,4 @@ src/CMakeLists.txt
 
 # other stuff
 src/environment/src/env/data/car_and_closest_point.jpeg
+*.h5f #keras weights save files
