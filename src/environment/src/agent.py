@@ -11,7 +11,7 @@ import rospy
 
 def main():
     env = GazeboEnv()
-    for _ in range(1):
+    for _ in range(100):
         observation, reward, done, info = env.step(6)
     print(observation)
 

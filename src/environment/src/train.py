@@ -39,7 +39,7 @@ def train():
                    target_model_update=1e-2, policy=policy)
     dqn.compile(Adam(lr=1e-3), metrics=['mae'])
 
-    dqn.fit(env, nb_steps=50000, visualize=True, verbose=1)
+    dqn.fit(env, nb_steps=50000, visualize=True, verbose=2)
 
     #dqn.save_weights('dqn_{}_weights.h5f'.format(ENV_NAME), overwrite=True)
 

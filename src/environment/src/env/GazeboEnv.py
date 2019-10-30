@@ -14,13 +14,14 @@ import cv2
 from image_processing.ros_image import RosImage
 
 from BoardPath import BoardPath
-from utils.math_helpers import get_two_straight_lines_intersection
+from utils.math_helpers import get_two_straight_lines_intersection, angle_between_two_straight
 
 color_1 = (73, 73, 73)
 color_2 = (74, 175, 142)
 color_3 = (158, 148, 99)
 color_4 = (70, 83, 182)
 color_5 = (129, 19, 245)
+
 
 class GazeboEnv(Env, GazeboMixin):
     # TODO It should not be hardcoded
@@ -56,7 +57,7 @@ class GazeboEnv(Env, GazeboMixin):
         self.current_board = None
         self.white_indices = np.argwhere(self.board == 255)
 
-        self.current_car_position = np.zeros((2, ))
+        self.current_car_position = np.zeros((2,))
 
         # add center camera image
         self.center_image = RosImage(GazeboEnv.CENTER_CAMERA_TOPIC)
@@ -90,10 +91,24 @@ class GazeboEnv(Env, GazeboMixin):
 
         self.observation = self._get_observation()
 
-        reward = self._calculate_reward()
+        car_x, car_y = self._get_car_position()
+        relative_car_y = (self.BOARD_HEIGHT / 2 - car_y) * 100
+        relative_car_x = (car_x + self.BOARD_WIDTH / 2) * 100
+        self.board_path.update(relative_car_x, relative_car_y)
 
-        done = 1 / reward > 150  # distance greater than 150 units  # TODO
+        relative_car_x = int(relative_car_x)
+        relative_car_y = int(relative_car_y)
 
+        _, distance = self._get_closest_point_on_board(relative_car_x, relative_car_y)
+        self.current_car_position = np.array([relative_car_x, relative_car_y])
+
+        a = self.board_path.car_direction_straight
+        b = self.board_path.current_road_straight_line
+        angle = angle_between_two_straight(a, b)
+
+        reward = self._calculate_reward(distance, angle)
+
+        done = distance > 700  # distance greater than 150 units  # TODO
 
         return self.observation, reward, done, info
 
@@ -134,19 +149,12 @@ class GazeboEnv(Env, GazeboMixin):
 
         return self.center_image.image
 
-    def _calculate_reward(self):
-        car_x, car_y = self._get_car_position()
-        relative_car_y = (self.BOARD_HEIGHT / 2 - car_y) * 100
-        relative_car_x = (car_x + self.BOARD_WIDTH / 2) * 100
-        self.board_path.update(relative_car_x, relative_car_y)
-
-        relative_car_x = int(relative_car_x)
-        relative_car_y = int(relative_car_y)
-
-        _, distance = self._get_closest_point_on_board(relative_car_x, relative_car_y)
-        self.current_car_position = np.array([relative_car_x, relative_car_y])
-        # TODO more sophisticated reward function (?)
-        reward = 1 / (distance + 0.001)
+    def _calculate_reward(self, distance, angle):
+        d = 50 / distance
+        if d > 1: d = 1
+        av = np.cos(2 * abs(angle) / np.pi)
+        reward = (d + av) / 2
+        print("angle: {}, dinstace: {},d:{}, av:{}, reward: {}".format(angle, distance, d, av, reward))
 
         return reward
 
@@ -219,7 +227,8 @@ class GazeboEnv(Env, GazeboMixin):
 
     def _print_car_position_on_board(self):
         distance = 15
-        cv2.rectangle(self.current_board, tuple(self.current_car_position - 10), tuple(self.current_car_position + 10), color_1, -1)
+        cv2.rectangle(self.current_board, tuple(self.current_car_position - 10), tuple(self.current_car_position + 10),
+                      color_1, -1)
 
     def draw_waypoints(self):
         # draw checkpoints
