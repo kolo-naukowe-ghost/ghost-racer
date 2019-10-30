@@ -195,7 +195,7 @@ class SimpleKeyTeleop():
         self._interface.clear()
         for i, (key, val) in enumerate(info.items()):
             if key == 'angle':
-                self._interface.write_line(i + 2, "{}: {:9.4f} ({:3d}°C)".format(key, val, int(val * 180 / 3.14)))
+                self._interface.write_line(i + 2, "{}: {:9.4f} ({:3d}°)".format(key, val, int(val * 180 / 3.14)))
             else:
                 self._interface.write_line(i + 2, "{}: {:9.4f}".format(key, val))
 
