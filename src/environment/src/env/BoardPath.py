@@ -71,6 +71,13 @@ class BoardPath:
     def angle_to_road(self):
         return angle_between_two_straight(self.current_road_straight_line, self.car_direction_straight)
 
+    @property
+    def angle_to_road_rad(self):
+        '''
+        returns angle to road in radians
+        '''
+        return np.deg2rad(self.angle_to_road)
+
     def _update(self):
         v = self.current_checkpoint - self.car_position
         distance_squared = v.dot(v)
@@ -90,13 +97,6 @@ class BoardPath:
             self.car_direction = vector
         self._last_car_position = self.car_position
         self._update()
-
-    def get_angle_to_next_checkpoint(self):
-        dir_to_checkpoint = normalized(self.current_checkpoint - self.car_position)
-        dot = np.dot(dir_to_checkpoint, self.car_direction)
-        det = self.car_direction[0] * dir_to_checkpoint[0] - self.car_direction[1] * dir_to_checkpoint[1]
-        angle = np.arctan2(det, dot)  # atan2(y, x) or atan2(sin, cos)
-        return angle
 
     def get_distance_to_next_checkpoint(self):
         v = self.current_checkpoint - self.car_position

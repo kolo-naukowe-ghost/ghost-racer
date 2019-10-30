@@ -149,7 +149,7 @@ class GazeboEnv(Env, GazeboMixin):
         self._info['distance_to_road'] = distance
         self._info['distance_to_checkpoint'] = self.board_path.get_distance_to_next_checkpoint()
         #print("Distance:", distance)
-        angle = self.board_path.get_angle_to_next_checkpoint()
+        angle = self.board_path.angle_to_road_rad
         self._info['angle'] = angle
         velocity = self.board_path.car_velocity
         # TODO more sophisticated reward function (?)
